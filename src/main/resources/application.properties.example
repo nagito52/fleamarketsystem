@@ -1,0 +1,28 @@
+spring.application.name=fleamarketsystem
+
+# ==== PostgreSQL 接続 ====
+spring.datasource.driver-class-name=org.postgresql.Driver
+# ローカル開発用のデフォルト値を残し、パスワードなどは空にするか環境変数を指定
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/userdb}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:}
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=none
+spring.sql.init.mode=never
+
+# Stripe API Key (値は空にする)
+stripe.api.key=${STRIPE_API_KEY:}
+stripe.public.key=${STRIPE_PUBLIC_KEY:}
+
+# Cloudinary (値は空にする)
+cloudinary.cloud_name=${CLOUDINARY_CLOUD_NAME:}
+cloudinary.api_key=${CLOUDINARY_API_KEY:}
+cloudinary.api_secret=${CLOUDINARY_API_SECRET:}
+
+# LINE Message API (値は空にする)
+line.messaging.token=${LINE_MESSAGING_TOKEN:}
+line.messaging.user-id=${LINE_MESSAGING_USER_ID:}
+
+# ログ設定
+logging.level.root=INFO
