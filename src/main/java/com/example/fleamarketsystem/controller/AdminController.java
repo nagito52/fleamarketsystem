@@ -3,6 +3,7 @@ package com.example.fleamarketsystem.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.fleamarketsystem.entity.Item;
 import com.example.fleamarketsystem.service.AdminUserService;
 import com.example.fleamarketsystem.service.AppOrderService;
 import com.example.fleamarketsystem.service.ItemService;
@@ -30,7 +32,8 @@ public class AdminController {
 	private final AdminUserService adminUserService; // 追加
 
 	// コンストラクタに adminUserService を追加
-	public AdminController(ItemService itemService, AppOrderService appOrderService, AdminUserService adminUserService) {
+	public AdminController(ItemService itemService, AppOrderService appOrderService,
+			AdminUserService adminUserService) {
 		this.itemService = itemService;
 		this.appOrderService = appOrderService;
 		this.adminUserService = adminUserService;
@@ -42,11 +45,19 @@ public class AdminController {
 		return "admin_items";
 	}
 
-	@PostMapping("/items/{id}/delete")
-	public String deleteItemByAdmin(@PathVariable("id") Long itemId) {
-		// 必要に応じて：削除前に LineMessagingService で「規約違反のため削除」と通知することも可能
-		itemService.deleteItem(itemId);
-		return "redirect:/admin/items?success=deleted";
+	@GetMapping("/dashboard")
+	public String dashboard(Model model) {
+	    // 修正前: itemService.getAvailableItems() など（出品中のものだけを取得していた）
+	    // 修正後: getAllItems() を使用して、売却済みの商品も表示されるようにする
+	    model.addAttribute("recentItems", itemService.getAllItems().stream()
+	            .limit(10) // 最新10件などに制限すると見やすくなります
+	            .collect(Collectors.toList()));
+
+	    model.addAttribute("activeOrders", appOrderService.getActiveOrders());
+	    model.addAttribute("pendingCancels", appOrderService.getPendingCancelOrders());
+	    model.addAttribute("finalizedCancels", appOrderService.getFinalizedCancelledOrders());
+	    
+	    return "admin_dashboard";
 	}
 
 	@GetMapping("/statistics")
@@ -60,27 +71,32 @@ public class AdminController {
 		if (endDate == null)
 			endDate = LocalDate.now();
 
+		// Service側の戻り値（BigDecimal/Map）を正しく受け取ってModelへ
 		model.addAttribute("startDate", startDate);
 		model.addAttribute("endDate", endDate);
 		model.addAttribute("totalSales", appOrderService.getTotalSales(startDate, endDate));
 		model.addAttribute("orderCountByStatus", appOrderService.getOrderCountByStatus(startDate, endDate));
-		// ファイル名のタイポ修正：admin_startistics -> admin_statistics
+
 		return "admin_statistics";
 	}
-	
-	// AdminController.java の 120行目付近（または追加したdashboardメソッド内）
 
-	// AdminController.java (120行目付近に追加)
+	@PostMapping("/items/{id}/delete")
+	public String deleteItemByAdmin(@PathVariable("id") Long itemId) {
+	    // 新しく作った方のメソッドを呼ぶ
+	    Item item = itemService.getItemByIdOrThrow(itemId); 
 
-	@GetMapping("/dashboard")
-	public String dashboard(Model model) {
-	    // 最近の出品を取得 (ItemService.java に getAllItems がある前提)
-	    model.addAttribute("recentItems", itemService.getAllItems()); 
-	    
-	    // 注文一覧を取得 (後述する AppOrderService の修正が必要です)
-	    model.addAttribute("recentOrders", appOrderService.getAllOrders()); 
+	    if ("取引中".equals(item.getStatus())) {
+	        return "redirect:/admin/items?error=trading";
+	    }
 
-	    return "admin_dashboard";
+	    itemService.deleteItem(itemId);
+	    return "redirect:/admin/items?success=deleted";
+	}
+
+	@PostMapping("/orders/{id}/final-cancel")
+	public String finalizeCancelByAdmin(@PathVariable("id") Long orderId) throws com.stripe.exception.StripeException {
+		appOrderService.finalCancel(orderId);
+		return "redirect:/admin/dashboard?success=refunded";
 	}
 
 	@GetMapping("/statistics/csv")
@@ -104,11 +120,11 @@ public class AdminController {
 			// 2. サービス側の詳細なCSV出力ロジックを呼び出す
 			// 統計期間のヘッダー等もサービス側で統一的に管理
 			writer.append("統計期間：").append(String.valueOf(startDate))
-				  .append("から").append(String.valueOf(endDate)).append("\n\n");
-			
+					.append("から").append(String.valueOf(endDate)).append("\n\n");
+
 			// 注文明細やステータス集計など、AdminUserServiceに実装したロジックを利用
 			adminUserService.writeStatisticsCsv(writer, startDate, endDate);
-			
+
 			writer.flush();
 		}
 	}

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.fleamarketsystem.entity.Item;
@@ -49,7 +50,13 @@ public class ItemService {
 	}
 
 	public Optional<Item> getItemById(Long id) {
-		return itemRepository.findById(id);
+	    return itemRepository.findById(id);
+	}
+
+	// 管理者削除チェック用の新しいメソッドを追加
+	public Item getItemByIdOrThrow(Long id) {
+	    return itemRepository.findById(id)
+	            .orElseThrow(() -> new IllegalArgumentException("指定された商品が見つかりません。ID: " + id));
 	}
 
 	public Item saveItem(Item item, MultipartFile imageFile) throws IOException {
@@ -82,5 +89,20 @@ public class ItemService {
 			item.setStatus("売却済");
 			itemRepository.save(item);
 		});
+	}
+	
+	@Transactional
+	public void updateItemStatus(Long itemId, String status) {
+	    Item item = itemRepository.findById(itemId)
+	            .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+	    item.setStatus(status);
+	    itemRepository.save(item);
+	}
+	
+	public List<Item> getRecentItemsForAdmin() {
+	    // ページ指定なしで全件取得し、新しい順に並べる（あるいはRepositoryにTop5等のメソッドを作る）
+	    // 今回はシンプルに全件取得のリストから最新5件などのロジックをコントローラーで使うか、
+	    // Repositoryに専用メソッドを作るのが綺麗です。
+	    return itemRepository.findAll(); 
 	}
 }

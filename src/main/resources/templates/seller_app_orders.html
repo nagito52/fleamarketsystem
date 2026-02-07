@@ -61,6 +61,20 @@
 							<button type="submit" class="button">発送済みにする</button>
 						</form>
 					</td>
+					<td>
+						<form th:if="${order.status == T(com.example.fleamarketsystem.entity.AppOrder).STATUS_TRADING}"
+							th:action="@{/orders/{id}/ship(id=${order.id})}" method="post">
+							<button type="submit" class="button">発送を通知する</button>
+						</form>
+
+						<form th:if="${order.status == T(com.example.fleamarketsystem.entity.AppOrder).STATUS_CANCEL_REQUESTED}" 
+						              th:action="@{/orders/{id}/approve-cancel(id=${order.id})}" method="post">
+						            <button type="submit" class="button secondary" style="background-color: #ff5722;"
+						                    onclick="return confirm('本当にこの取引のキャンセルに同意しますか？');">
+						                キャンセルに同意する
+						            </button>
+						        </form>
+					</td>
 				</tr>
 				<!-- データが空の場合の表示（0 件メッセージ） -->
 				<tr th:if="${#lists.isEmpty(mySales)}">

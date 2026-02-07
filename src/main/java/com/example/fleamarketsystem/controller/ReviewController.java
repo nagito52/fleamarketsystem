@@ -1,5 +1,7 @@
 package com.example.fleamarketsystem.controller;
 
+import java.util.List;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.fleamarketsystem.entity.AppOrder;
+import com.example.fleamarketsystem.entity.Review;
 import com.example.fleamarketsystem.entity.User;
 import com.example.fleamarketsystem.service.AppOrderService;
 import com.example.fleamarketsystem.service.ReviewService;
@@ -37,6 +40,20 @@ public class ReviewController {
 				.orElseThrow(() -> new IllegalArgumentException("Order not found"));
 		model.addAttribute("order", order);
 		return "review_form";
+	}
+	
+	@GetMapping("/received")
+	public String showReceivedReviews(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+	    User currentUser = userService.getUserByEmail(userDetails.getUsername())
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+
+	    // 自分宛に届いたレビュー一覧を取得
+	    List<Review> receivedReviews = reviewService.getReviewsReceivedByUser(currentUser);
+	    
+	    model.addAttribute("reviews", receivedReviews);
+	    model.addAttribute("title", "自分への評価一覧");
+	    
+	    return "review_list"; // 新しく作成するHTML名
 	}
 
 	@PostMapping

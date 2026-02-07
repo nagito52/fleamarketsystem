@@ -46,10 +46,9 @@
 			<!-- アクションボタン群 -->
 			<div class="button-group">
 				<!-- 自分以外が出品した「出品中」商品だけ購入ボタンを表示 -->
-				<form th:action="@{/orders/initiate-purchase}" method="post"
-				      sec:authorize="isAuthenticated()"
-				      th:if="${item.status == '出品中' and item.seller.email != #authentication.name}"
-				      onsubmit="return confirm('本当にこの商品を購入しますか？');">
+				<form th:action="@{/orders/initiate-purchase}" method="post" sec:authorize="isAuthenticated()"
+					th:if="${item.status == '出品中' and item.seller.email != #authentication.name}"
+					onsubmit="return confirm('本当にこの商品を購入しますか？');">
 					<!-- Stripe 連携に渡す itemId を hidden で送信 -->
 					<input type="hidden" name="itemId" th:value="${item.id}">
 					<!-- 購入開始ボタン -->
@@ -95,12 +94,19 @@
 			</div>
 		</div>
 		<!-- チャット送信フォーム -->
-		<form th:action="@{/chat/{itemId}(itemId=${item.id})}" method="post" class="chatform">
-			<!-- 入力テキストエリア（必須） -->
+		<form th:if="${item.status == '出品中'}" th:action="@{/items/{id}/chats(id=${item.id})}" method="post"
+			class="chatform">
 			<textarea name="message" placeholder="メッセージを入力してください" required></textarea>
-			<!-- 送信ボタン -->
 			<button type="submit">送信</button>
 		</form>
+
+		<div th:if="${item.status != '出品中'}"
+			style="background-color: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px;">
+			<p style="color: #666; font-weight: bold; margin-bottom: 0;">
+				<span th:if="${item.status == '取引中'}">📢 現在取引中のため、チャットの受付を終了しました。</span>
+				<span th:if="${item.status == '売却済'}">✅ この商品は完売いたしました。</span>
+			</p>
+		</div>
 		<!-- 下部の戻るボタン -->
 		<div class="button-group">
 			<!-- 商品一覧ページへの戻りリンク -->

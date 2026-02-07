@@ -15,15 +15,21 @@
 <!-- 表示本体 -->
 
 <body>
-	<!-- レイアウト用コンテナ -->
 	<div class="container">
-		<!-- ページ見出し -->
 		<h1>管理者: 商品管理</h1>
-		<!-- 画面の説明文 -->
 		<p>システム内の全ての商品を管理します。</p>
-		<!-- 商品一覧テーブル -->
+
+		<div th:if="${param.error == 'trading'}"
+			style="color: white; background-color: #d32f2f; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-weight: bold;">
+			エラー: この商品は現在取引中（決済完了〜受取前）のため、削除できません。
+		</div>
+
+		<div th:if="${param.success == 'deleted'}"
+			style="color: white; background-color: #28a745; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-weight: bold;">
+			商品、および関連する注文・評価情報を正常に削除しました。
+		</div>
+
 		<table>
-			<!-- 列見出し -->
 			<thead>
 				<tr>
 					<th>ID</th>
@@ -35,45 +41,33 @@
 					<th>操作</th>
 				</tr>
 			</thead>
-			<!-- テーブル本体 -->
 			<tbody>
-				<!-- items をループして 1 行ずつ描画 -->
 				<tr th:each="item : ${items}">
-					<!-- 商品 ID を表示 -->
 					<td th:text="${item.id}"></td>
-					<!-- 商品名を表示 -->
 					<td th:text="${item.name}"></td>
-					<!-- 出品者名を表示 -->
 					<td th:text="${item.seller.name}"></td>
-					<!-- 価格をフォーマットして表示 -->
 					<td th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0,'POINT')}"></td>
-					<!-- カテゴリ名。null なら未分類と表示 -->
 					<td th:text="${item.category != null ? item.category.name : '未分類'}"></td>
-					<!-- 商品ステータスを表示 -->
 					<td th:text="${item.status}"></td>
-					<!-- 操作列（削除ボタン） -->
 					<td>
-						<!-- 管理者による削除 POST を送信。確認ダイアログで誤操作を防止 -->
 						<form th:action="@{/admin/items/{id}/delete(id=${item.id})}" method="post"
 							style="display:inline;">
-							<!-- 削除ボタン（赤系スタイル）。confirm で最終確認 -->
-							<button type="submit" class="button danger" onclick="return confirm('本当にこの商品を削除しますか？');">削除</button>
+							<button type="submit"
+								th:class="${item.status == '取引中' ? 'button secondary' : 'button danger'}"
+								th:disabled="${item.status == '取引中'}"
+								th:title="${item.status == '取引中' ? '取引中は削除できません' : '商品を削除します'}"
+								onclick="return confirm('本当にこの商品を削除しますか？');">
+								削除
+							</button>
 						</form>
 					</td>
 				</tr>
-				<!-- items が空の場合の 1 行表示 -->
 				<tr th:if="${#lists.isEmpty(items)}">
-					<!-- 全列結合でメッセージを表示 -->
 					<td colspan="7">商品がありません。</td>
 				</tr>
 			</tbody>
 		</table>
-		<!-- 画面下部の戻るボタン群 -->
-		<div class="button-group">
-			<!-- 管理者ダッシュボードへの戻りリンク -->
-			<a th:href="@{/admin/dashboard}" class="button secondary">管理者ダッシュボードに戻
-				る</a>
-		</div>
+
 	</div>
 </body>
 

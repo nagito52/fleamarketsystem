@@ -15,53 +15,45 @@
 <!-- 画面本体開始 -->
 
 <body>
-	<!-- レイアウト中央寄せのコンテナ -->
 	<div class="container">
-		<!-- ページ見出し -->
 		<h1>出品管理</h1>
-		<!-- ページ説明文 -->
 		<p>あなたが出品した商品の一覧です。</p>
-		<!-- 主要ナビ（新規出品と戻る） -->
-		<div class="main-nav">
-			<!-- 新規出品ページへのリンク -->
-			<a th:href="@{/items/new}" class="button">新しい商品を出品する</a>
-			<!-- マイページに戻るリンク（セカンダリ） -->
-			<a th:href="@{/my_page}" class="button secondary">マイページに戻る</a>
+
+		<div th:if="${errorMessage}"
+			style="color: white; background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+			<p th:text="${errorMessage}"></p>
 		</div>
-		<!-- 出品中アイテムのカードグリッド -->
+		<div th:if="${successMessage}"
+			style="color: white; background-color: #28a745; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+			<p th:text="${successMessage}"></p>
+		</div>
+
 		<div class="item-grid">
-			<!-- sellingItems をループして各アイテムカードを表示 -->
 			<div class="item-card" th:each="item : ${sellingItems}">
-				<!-- 商品詳細へのリンクでカード全体を囲む -->
 				<a th:href="@{/items/{id}(id=${item.id})}">
-					<!-- 商品画像（なければプレースホルダ） -->
-					<img th:src="${item.imageUrl != null ? item.imageUrl :
-'/images/placeholder.png'}" alt="商品画像">
-					<!-- 商品名 -->
+					<img th:src="${item.imageUrl != null ? item.imageUrl : '/images/placeholder.png'}" alt="商品画像">
 					<h3 th:text="${item.name}"></h3>
-					<!-- 価格を通貨風（¥＋カンマ区切り）で表示 -->
-					<p class="price" th:text="'¥' + ${#numbers.formatDecimal(item.price, 0,
-'COMMA', 0, 'POINT')}"></p>
-					<!-- 出品ステータス（出品中/売却済） -->
+					<p class="price" th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></p>
 					<p class="status" th:text="${item.status}"></p>
 				</a>
-				<!-- 各カード下の操作ボタン群 -->
+
 				<div class="button-group">
-					<!-- 編集画面へのリンク（セカンダリ） -->
-					<a th:href="@{/items/{id}/edit(id=${item.id})}" class="button secondary">
-						編集</a>
-					<!-- 削除フォーム（POST）。インライン表示で横並び -->
+					<a th:if="${item.status != '売却済'}" th:href="@{/items/{id}/edit(id=${item.id})}"
+						th:class="${item.status == '取引中' ? 'button secondary disabled' : 'button secondary'}"
+						th:style="${item.status == '取引中' ? 'pointer-events: none; opacity: 0.5;' : ''}">
+						編集
+					</a>
+
+					<span th:if="${item.status == '売却済'}"
+						style="color: #666; font-weight: bold; background: #eee; padding: 5px 15px; border-radius: 4px; display: inline-block;">
+						売却済（編集不可）
+					</span>
+
 					<form th:action="@{/items/{id}/delete(id=${item.id})}" method="post" style="display:inline;">
-						<!-- 確認ダイアログ付きの削除ボタン（危険色） -->
-						<button type="submit" class="button danger"
+						<button type="submit" class="button danger" th:disabled="${item.status == '取引中'}"
 							onclick="return confirm('本当にこの商品を削除しますか？');">削除</button>
 					</form>
 				</div>
-			</div>
-			<!-- 出品が 0 件のときの表示 -->
-			<div th:if="${#lists.isEmpty(sellingItems)}">
-				<!-- 0 件メッセージ -->
-				<p>出品中の商品はありません。</p>
 			</div>
 		</div>
 	</div>

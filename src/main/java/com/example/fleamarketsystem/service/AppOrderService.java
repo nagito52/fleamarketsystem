@@ -22,124 +22,224 @@ import com.stripe.model.PaymentIntent;
 @Service
 public class AppOrderService {
 
-    private final AppOrderRepository appOrderRepository;
-    private final ItemRepository itemRepository;
-    private final ItemService itemService;
-    private final StripeService stripeService;
-    private final LineMessagingService lineMessagingService;
+	private final AppOrderRepository appOrderRepository;
+	private final ItemRepository itemRepository;
+	private final ItemService itemService;
+	private final StripeService stripeService;
+	private final LineMessagingService lineMessagingService;
 
-    public AppOrderService(AppOrderRepository appOrderRepository, ItemRepository itemRepository,
-            ItemService itemService, StripeService stripeService, LineMessagingService lineMessagingService) {
-        this.appOrderRepository = appOrderRepository;
-        this.itemRepository = itemRepository;
-        this.itemService = itemService;
-        this.stripeService = stripeService;
-        this.lineMessagingService = lineMessagingService;
-    }
+	public AppOrderService(AppOrderRepository appOrderRepository, ItemRepository itemRepository,
+			ItemService itemService, StripeService stripeService, LineMessagingService lineMessagingService) {
+		this.appOrderRepository = appOrderRepository;
+		this.itemRepository = itemRepository;
+		this.itemService = itemService;
+		this.stripeService = stripeService;
+		this.lineMessagingService = lineMessagingService;
+	}
 
-    // --- ここに getOrdersByBuyer と getOrdersBySeller を追加 ---
+	// --- 1. 一般ユーザー向け：注文・出品履歴取得 (今回のエラー修正箇所) ---
 
-    public List<AppOrder> getOrdersByBuyer(User buyer) {
-        return appOrderRepository.findByBuyer(buyer);
-    }
+	public List<AppOrder> getOrdersByBuyer(User buyer) {
+		return appOrderRepository.findByBuyer(buyer);
+	}
 
-    public List<AppOrder> getOrdersBySeller(User seller) {
-        return appOrderRepository.findByItem_seller(seller);
-    }
+	public List<AppOrder> getOrdersBySeller(User seller) {
+		return appOrderRepository.findByItem_seller(seller);
+	}
 
-    // --- 既存のメソッド ---
+	public Optional<AppOrder> getOrderById(Long orderId) {
+		return appOrderRepository.findById(orderId);
+	}
 
-    @Transactional
-    public PaymentIntent initiatePurchase(Long itemId, User buyer) throws StripeException {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
-        if (!"出品中".equals(item.getStatus())) {
-            throw new IllegalStateException("Item is not available for purchase.");
-        }
-        PaymentIntent paymentIntent = stripeService.createPaymentIntent(item.getPrice(),
-                "jpy", "購入: " + item.getName());
-        AppOrder appOrder = new AppOrder();
-        appOrder.setItem(item);
-        appOrder.setBuyer(buyer);
-        appOrder.setPrice(item.getPrice());
-        appOrder.setStatus("決済待ち");
-        appOrder.setPaymentIntentId(paymentIntent.getId());
-        appOrder.setCreatedAt(LocalDateTime.now());
-        appOrderRepository.save(appOrder);
-        return paymentIntent;
-    }
+	// --- 2. 管理画面ダッシュボード用：ステータス別取得 ---
 
-    @Transactional
-    public AppOrder completePurchase(String paymentIntentId) throws StripeException {
-        PaymentIntent paymentIntent = stripeService.retrievePaymentIntent(paymentIntentId);
-        if (!"succeeded".equals(paymentIntent.getStatus())) {
-            throw new IllegalStateException("Payment not succeeded. Status: " + paymentIntent.getStatus());
-        }
+	public List<AppOrder> getActiveOrders() {
+		return appOrderRepository.findAll().stream()
+				.filter(order -> !AppOrder.STATUS_CANCELLED.equals(order.getStatus())
+						&& !AppOrder.STATUS_CANCEL_AGREED.equals(order.getStatus()))
+				// STATUS_COMPLETED を除外しないことで、完了後も表示され続けます
+				.collect(Collectors.toList());
+	}
 
-        AppOrder appOrder = appOrderRepository.findByPaymentIntentId(paymentIntentId)
-                .orElseThrow(() -> new IllegalStateException("Order for PaymentIntent not found."));
+	public List<AppOrder> getPendingCancelOrders() {
+		return appOrderRepository.findAll().stream()
+				.filter(order -> AppOrder.STATUS_CANCEL_AGREED.equals(order.getStatus()))
+				.collect(Collectors.toList());
+	}
 
-        if ("購入済".equals(appOrder.getStatus()) || "発送済".equals(appOrder.getStatus())) {
-            return appOrder;
-        }
+	public List<AppOrder> getFinalizedCancelledOrders() {
+		return appOrderRepository.findAll().stream()
+				.filter(order -> AppOrder.STATUS_CANCELLED.equals(order.getStatus()))
+				.collect(Collectors.toList());
+	}
 
-        appOrder.setStatus("購入済");
-        itemService.markItemAsSold(appOrder.getItem().getId());
-        AppOrder savedOrder = appOrderRepository.save(appOrder);
+	// --- 3. 取引アクション（購入・発送・到着・キャンセル） ---
 
-        String message = String.format("\n商品が購入されました！\n商品名: %s\n購入者: %s\n価格: ¥%s",
-                savedOrder.getItem().getName(),
-                savedOrder.getBuyer().getName(),
-                savedOrder.getPrice());
+	@Transactional
+	public PaymentIntent initiatePurchase(Long itemId, User buyer) throws StripeException {
+		Item item = itemRepository.findById(itemId).orElseThrow(() -> new IllegalArgumentException("Item not found"));
+		if (!"出品中".equals(item.getStatus())) {
+			throw new IllegalStateException("この商品は現在購入できません。");
+		}
 
-        lineMessagingService.sendMessage(message);
+		PaymentIntent paymentIntent = stripeService.createPaymentIntent(item.getPrice(), "jpy",
+				"購入: " + item.getName());
 
-        return savedOrder;
-    }
+		AppOrder appOrder = new AppOrder();
+		appOrder.setItem(item);
+		appOrder.setBuyer(buyer);
+		appOrder.setPrice(item.getPrice());
+		appOrder.setStatus("決済待ち");
+		appOrder.setPaymentIntentId(paymentIntent.getId());
+		appOrder.setCreatedAt(LocalDateTime.now());
 
-    @Transactional
-    public void markOrderAsShipped(Long orderId) {
-        AppOrder appOrder = appOrderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        appOrder.setStatus("発送済");
-        AppOrder savedOrder = appOrderRepository.save(appOrder);
+		appOrderRepository.saveAndFlush(appOrder);
+		return paymentIntent;
+	}
 
-        String message = String.format("\n購入した商品が発送されました！\n商品名: %s\n出品者: %s",
-                savedOrder.getItem().getName(),
-                savedOrder.getItem().getSeller().getName());
+	@Transactional
+	public AppOrder completePurchase(String paymentIntentId) throws StripeException {
+		PaymentIntent paymentIntent = stripeService.retrievePaymentIntent(paymentIntentId);
+		if (!"succeeded".equals(paymentIntent.getStatus())) {
+			throw new IllegalStateException("決済が完了していません。");
+		}
 
-        lineMessagingService.sendMessage(message);
-    }
+		AppOrder appOrder = appOrderRepository.findByPaymentIntentId(paymentIntentId)
+				.orElseThrow(() -> new IllegalStateException("注文が見つかりません。"));
 
-    public Optional<AppOrder> getOrderById(Long orderId) {
-        return appOrderRepository.findById(orderId);
-    }
+		if (AppOrder.STATUS_TRADING.equals(appOrder.getStatus())
+				|| AppOrder.STATUS_COMPLETED.equals(appOrder.getStatus())) {
+			return appOrder;
+		}
 
-    public Optional<Long> getLatestCompletedOrderId() {
-        return appOrderRepository.findAll().stream()
-                .filter(o -> "購入済".equals(o.getStatus()))
-                .map(AppOrder::getId)
-                .max(Long::compare);
-    }
+		appOrder.setStatus(AppOrder.STATUS_TRADING);
+		Item item = appOrder.getItem();
+		item.setStatus("取引中");
 
-    public BigDecimal getTotalSales(LocalDate startDate, LocalDate endDate) {
-        return appOrderRepository.findAll().stream()
-                .filter(order -> order.getStatus().equals("購入済") || order.getStatus().equals("発送済"))
-                .filter(order -> order.getCreatedAt().toLocalDate().isAfter(startDate.minusDays(1)) &&
-                        order.getCreatedAt().toLocalDate().isBefore(endDate.plusDays(1)))
-                .map(AppOrder::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
+		itemRepository.saveAndFlush(item);
+		AppOrder savedOrder = appOrderRepository.saveAndFlush(appOrder);
 
-    public Map<String, Long> getOrderCountByStatus(LocalDate startDate, LocalDate endDate) {
-        return appOrderRepository.findAll().stream()
-                .filter(order -> order.getCreatedAt().toLocalDate().isAfter(startDate.minusDays(1)) &&
-                        order.getCreatedAt().toLocalDate().isBefore(endDate.plusDays(1)))
-                .collect(Collectors.groupingBy(AppOrder::getStatus, Collectors.counting()));
-    }
-    
- // AppOrderService.java の最後の方に追加
-    public List<AppOrder> getAllOrders() {
-        return appOrderRepository.findAll();
-    }
+		// 【修正】自分（管理者）へのLINE通知
+		try {
+			// DBからLINE IDを取得せず、固定の宛先に送る既存のメソッドを呼び出す
+			String messageText = String.format(
+					"【自分宛通知】商品が購入されました！\n商品名: %s\n購入者: %s\n価格: ¥%s",
+					item.getName(),
+					savedOrder.getBuyer().getName(),
+					savedOrder.getPrice());
+
+			// 引数を messageText だけにすることで、LineMessagingService の既存メソッドと一致させます
+			lineMessagingService.sendMessage(messageText);
+
+		} catch (Exception e) {
+			// 通知の失敗で取引処理を止めないよう、エラー内容を出力
+			System.err.println("LINE通知送信失敗: " + e.getMessage());
+		}
+
+		return savedOrder;
+	}
+
+	@Transactional
+	public void confirmArrival(Long orderId, User buyer) {
+		AppOrder order = appOrderRepository.findById(orderId)
+				.orElseThrow(() -> new IllegalArgumentException("注文が見つかりません。"));
+
+		// 購入者本人かチェック
+		if (!order.getBuyer().getId().equals(buyer.getId())) {
+			throw new IllegalStateException("権限がありません。");
+		}
+
+		// 【追加】発送ステータスのチェック
+		// ステータスが「発送済」でない場合はエラーを投げる
+		if (!AppOrder.STATUS_SHIPPED.equals(order.getStatus())) {
+			throw new IllegalStateException("出品者が発送通知を出すまで、到着報告はできません。");
+		}
+
+		// 到着報告処理（ステータス更新）
+		order.setStatus(AppOrder.STATUS_COMPLETED);
+		Item item = order.getItem();
+		item.setStatus("売却済");
+
+		itemRepository.saveAndFlush(item);
+		appOrderRepository.saveAndFlush(order);
+
+		try {
+			String message = String.format("【受取通知】取引が完了しました！\n商品名: %s\n購入者: %s",
+					item.getName(), order.getBuyer().getName());
+			lineMessagingService.sendMessage(message);
+		} catch (Exception e) {
+			System.err.println("LINE通知失敗: " + e.getMessage());
+		}
+	}
+
+	@Transactional
+	public void markOrderAsShipped(Long orderId) {
+		AppOrder appOrder = appOrderRepository.findById(orderId).orElseThrow();
+		appOrder.setStatus(AppOrder.STATUS_SHIPPED);
+		appOrderRepository.saveAndFlush(appOrder);
+
+		try {
+			String message = String.format("【発送通知】商品が発送されました。\n商品名: %s\n出品者: %s",
+					appOrder.getItem().getName(), appOrder.getItem().getSeller().getName());
+			lineMessagingService.sendMessage(message);
+		} catch (Exception e) {
+			System.err.println("LINE通知失敗: " + e.getMessage());
+		}
+	}
+
+	@Transactional
+	public void requestCancel(Long orderId, User buyer) {
+		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
+		if (!order.getBuyer().getId().equals(buyer.getId()))
+			throw new IllegalStateException("権限がありません。");
+		order.setBuyerCancelRequested(true);
+		order.setStatus(AppOrder.STATUS_CANCEL_REQUESTED);
+		appOrderRepository.saveAndFlush(order);
+	}
+
+	@Transactional
+	public void approveCancel(Long orderId, User seller) {
+		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
+		if (!order.getItem().getSeller().getId().equals(seller.getId()))
+			throw new IllegalStateException("権限がありません。");
+		order.setSellerCancelApproved(true);
+		order.setStatus(AppOrder.STATUS_CANCEL_AGREED);
+		appOrderRepository.saveAndFlush(order);
+	}
+
+	@Transactional
+	public void finalCancel(Long orderId) throws StripeException {
+		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
+		stripeService.refund(order.getPaymentIntentId());
+		order.setStatus(AppOrder.STATUS_CANCELLED);
+		Item item = order.getItem();
+		item.setStatus("出品中");
+		itemRepository.saveAndFlush(item);
+		appOrderRepository.saveAndFlush(order);
+
+		try {
+			String message = String.format("【キャンセル確定】返金処理が完了しました。\n商品名: %s\n価格: ¥%s",
+					item.getName(), order.getPrice());
+			lineMessagingService.sendMessage(message);
+		} catch (Exception e) {
+			System.err.println("LINE通知失敗: " + e.getMessage());
+		}
+	}
+
+	// --- 4. 統計画面用 ---
+
+	public Map<String, Long> getOrderCountByStatus(LocalDate startDate, LocalDate endDate) {
+		return appOrderRepository.findAll().stream()
+				.filter(o -> !o.getCreatedAt().toLocalDate().isBefore(startDate)
+						&& !o.getCreatedAt().toLocalDate().isAfter(endDate))
+				.collect(Collectors.groupingBy(AppOrder::getStatus, Collectors.counting()));
+	}
+
+	public BigDecimal getTotalSales(LocalDate startDate, LocalDate endDate) {
+		return appOrderRepository.findAll().stream()
+				.filter(o -> AppOrder.STATUS_COMPLETED.equals(o.getStatus()))
+				.filter(o -> !o.getCreatedAt().toLocalDate().isBefore(startDate)
+						&& !o.getCreatedAt().toLocalDate().isAfter(endDate))
+				.map(AppOrder::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
+	}
 }
