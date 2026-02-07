@@ -82,7 +82,7 @@ public class ItemController {
 
 		return "item_form";
 	}
-	
+
 	@GetMapping("/{id}")
 	public String showItemDetail(
 			@PathVariable("id") Long id,
@@ -115,6 +115,10 @@ public class ItemController {
 			@RequestParam("categoryId") Long categoryId,
 			@RequestParam(value = "image", required = false) MultipartFile imageFile,
 			RedirectAttributes redirectAttributes) {
+		if (userDetails == null) {
+			redirectAttributes.addFlashAttribute("errorMessage", "セッションが切れました。もう一度ログインしてください。");
+			return "redirect:/login";
+		}
 		User seller = userService.getUserByEmail(userDetails.getUsername())
 				.orElseThrow(() -> new RuntimeException("Seller not found"));
 		Category category = categoryService.getCategoryById(categoryId)

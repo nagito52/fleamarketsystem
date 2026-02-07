@@ -26,12 +26,14 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/items/**").permitAll()
+						.requestMatchers("/login", "/signup", "/css/**", "/js/**", "/images/**", "/items/**")
+						.permitAll()
 						.requestMatchers("/orders/stripe-webhook").permitAll()
 						.requestMatchers("/admin/**").hasRole("ADMIN")
 						.anyRequest().authenticated())
 				.formLogin(login -> login
 						.loginPage("/login")
+						.loginProcessingUrl("/login")
 						// 自作の振り分けロジック（successHandler）を適用
 						.successHandler(successHandler())
 						.permitAll())
