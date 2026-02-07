@@ -52,6 +52,15 @@
 				<!-- 認証要求を送信 -->
 				<button type="submit">ログイン</button>
 			</div>
+			<form th:action="@{/login}" method="post">
+				<button type="submit" class="button">ログイン</button>
+			</form>
+
+			<div style="margin-top: 25px; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+				<p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">初めてご利用ですか？</p>
+				<a th:href="@{/signup}" class="button secondary"
+					style="width: auto; display: inline-block;">新規会員登録はこちら</a>
+			</div>
 		</form>
 	</div>
 </body>
