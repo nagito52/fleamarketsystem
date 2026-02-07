@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.Refund;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.RefundCreateParams;
 
 @Service
 public class StripeService {
@@ -36,5 +38,12 @@ public class StripeService {
 
 	public PaymentIntent retrievePaymentIntent(String paymentIntentId) throws StripeException {
 		return PaymentIntent.retrieve(paymentIntentId);
+	}
+
+	public void refund(String paymentIntentId) throws StripeException {
+		RefundCreateParams params = RefundCreateParams.builder()
+				.setPaymentIntent(paymentIntentId)
+				.build();
+		Refund.create(params);
 	}
 }

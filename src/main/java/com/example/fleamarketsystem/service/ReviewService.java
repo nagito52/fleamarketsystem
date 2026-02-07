@@ -58,4 +58,8 @@ public class ReviewService {
 		
 		return reviewRepository.findByReviewer(reviewer);
 	}
+	
+	public List<Review> getReviewsReceivedByUser(User user) {
+	    return reviewRepository.findByItem_SellerOrderByCreatedAtDesc(user);
+	}
 }

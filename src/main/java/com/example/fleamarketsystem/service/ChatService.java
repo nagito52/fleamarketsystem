@@ -45,13 +45,13 @@ public class ChatService {
 
 		// LINE通知の送信（Messaging API 形式）
 		// 誰がログインしていても、propertiesで設定した管理者のLINEに通知が届く設定です
-		String notificationMessage = String.format("\n商品「%s」に関する新しいメッセージが届きました！\n送信者: %s\nメッセージ: %s",
-				item.getName(),
-				sender.getName(),
-				message);
-
-		// 新しい sendMessage(String message) を呼び出す
-		lineMessagingService.sendMessage(notificationMessage);
+		try {
+            String lineMsg = String.format("【チャット通知】%sさんからメッセージ：\n商品: %s\n内容: %s", 
+                    sender.getName(), item.getName(), message);
+            lineMessagingService.sendMessage(lineMsg);
+        } catch (Exception e) {
+            System.err.println("LINE通知失敗: " + e.getMessage());
+        }
 
 		return savedChat;
 	}

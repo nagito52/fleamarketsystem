@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>届いた評価一覧</title>
+	<link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+	<div class="container">
+		<h1 th:text="${title}">自分への評価一覧</h1>
+
+		<div th:if="${#lists.isEmpty(reviews)}">
+			<p>まだ評価はありません。</p>
+		</div>
+
+		<div th:each="review : ${reviews}" class="review-item" style="border-bottom: 1px solid #ddd; padding: 15px 0;">
+			<div style="display: flex; justify-content: space-between;">
+				<strong th:text="${review.reviewer.name} + ' さんからの評価'"></strong>
+				<span th:text="${#temporals.format(review.createdAt, 'yyyy/MM/dd HH:mm')}"
+					style="color: #888; font-size: 0.9em;"></span>
+			</div>
+
+			<div style="color: #f39c12; margin: 5px 0;">
+				<span th:text="${'★'.repeat(review.rating)}"></span>
+				<span th:text="${'☆'.repeat(5 - review.rating)}" style="color: #ccc;"></span>
+			</div>
+
+			<p style="font-size: 0.9em; color: #555;">対象商品: <span th:text="${review.item.name}"></span></p>
+
+			<p th:text="${review.comment}" style="margin-top: 10px; line-height: 1.5;"></p>
+		</div>
+
+		<div style="margin-top: 30px;">
+			<a th:href="@{/items}" class="button secondary">トップへ戻る</a>
+		</div>
+	</div>
+</body>
+
+</html>

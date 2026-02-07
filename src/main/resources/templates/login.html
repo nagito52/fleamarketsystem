@@ -48,10 +48,6 @@
 				<input type="password" id="password" name="password" required>
 			</p>
 			<!-- ボタン群（送信のみ） -->
-			<div class="button-group">
-				<!-- 認証要求を送信 -->
-				<button type="submit">ログイン</button>
-			</div>
 			<form th:action="@{/login}" method="post">
 				<button type="submit" class="button">ログイン</button>
 			</form>

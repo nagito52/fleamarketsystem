@@ -1,45 +1,81 @@
-<!-- HTML5 文書であることを宣言 -->
 <!DOCTYPE html>
-<!-- 文書のルート要素。言語を日本語、Thymeleaf と Spring Security Dialect の XMLNS を宣言 -->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- メタデータと CSS などの外部リソースを定義する領域 -->
 
 <head>
-	<!-- 文字エンコーディングを UTF-8 に設定 -->
 	<meta charset="UTF-8">
-	<!-- ブラウザタブに表示されるページタイトルを設定 -->
 	<title>管理者ダッシュボード - フリマアプリ</title>
-	<!-- アプリ共通のスタイルシートを読み込む（Thymeleaf でパス解決） -->
 	<link rel="stylesheet" th:href="@{/css/style.css}">
+	<style>
+		.notification-box {
+			border: 2px solid #d32f2f;
+			padding: 15px;
+			margin-bottom: 30px;
+			border-radius: 8px;
+			background-color: #fff5f5;
+		}
+
+		.status-badge-active {
+			color: #007bff;
+			font-weight: bold;
+		}
+
+		.status-badge-success {
+			color: #28a745;
+			font-weight: bold;
+		}
+
+		.section-title {
+			border-left: 5px solid #333;
+			padding-left: 10px;
+			margin-top: 40px;
+		}
+	</style>
 </head>
-<!-- 画面に表示される本体部分 -->
 
 <body>
-	<!-- レイアウト用の幅制限と余白・影を与えるコンテナ -->
 	<div class="container">
-		<!-- ページ見出し -->
 		<h1>管理者ダッシュボード</h1>
-		<!-- ログイン中のユーザー名を Spring Security の認証情報から表示 -->
 		<p>ようこそ、<span sec:authentication="name"></span>さん！ (管理者)</p>
-		<!-- 主要ナビゲーションを並べる領域 -->
+
 		<div class="main-nav">
-			<!-- 商品管理画面へのリンク -->
 			<a th:href="@{/admin/items}" class="button">商品管理</a>
-			<!-- ユーザー管理画面へのリンク -->
 			<a th:href="@{/admin/users}" class="button">ユーザー管理</a>
-			<!-- 統計画面へのリンク -->
 			<a th:href="@{/admin/statistics}" class="button">統計画面</a>
-			<!-- ログアウト POST フォーム（CSRF 等は Spring Security が自動付与） -->
 			<form th:action="@{/logout}" method="post" style="display:inline;">
-				<!-- ログアウト送信ボタン（見た目はセカンダリ） -->
 				<button type="submit" class="button secondary">ログアウト</button>
 			</form>
 		</div>
-		<!-- 最近の出品セクション見出し -->
-		<h2>最近の出品</h2>
-		<!-- 最近の出品を表形式で表示 -->
+
+		<div th:if="${!#lists.isEmpty(pendingCancels)}" class="notification-box">
+			<h2 style="color: #d32f2f; margin-top: 0;">⚠️ キャンセル確定（返金）が必要な通知</h2>
+			<table>
+				<thead>
+					<tr>
+						<th>商品名</th>
+						<th>購入者</th>
+						<th>価格</th>
+						<th>操作</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="order : ${pendingCancels}">
+						<td th:text="${order.item.name}"></td>
+						<td th:text="${order.buyer.name}"></td>
+						<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></td>
+						<td>
+							<form th:action="@{/orders/{id}/final-cancel(id=${order.id})}" method="post"
+								style="display:inline;">
+								<button type="submit" class="button" style="background-color: #d32f2f;"
+									onclick="return confirm('Stripe返金を実行し、商品を再出品状態に戻します。よろしいですか？');">返金を確定する</button>
+							</form>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<h2 class="section-title">最近の出品</h2>
 		<table>
-			<!-- テーブルの列見出し -->
 			<thead>
 				<tr>
 					<th>商品名</th>
@@ -48,57 +84,68 @@
 					<th>ステータス</th>
 				</tr>
 			</thead>
-			<!-- テーブルの本体。items リストを Thymeleaf で展開 -->
 			<tbody>
-				<!-- recentItems をループし 1 行ずつ描画 -->
 				<tr th:each="item : ${recentItems}">
-					<!-- 商品名を表示 -->
 					<td th:text="${item.name}"></td>
-					<!-- 出品者の表示名を表示 -->
 					<td th:text="${item.seller.name}"></td>
-					<!-- 価格をコンマ区切りで表示し、先頭に¥を付与 -->
 					<td th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0,'POINT')}"></td>
-					<!-- 商品のステータス（出品中/売却済）を表示 -->
 					<td th:text="${item.status}"></td>
 				</tr>
-				<!-- 要素が空の場合のメッセージ行 -->
 				<tr th:if="${#lists.isEmpty(recentItems)}">
-					<!-- 全列を結合して「最近の出品はありません」を表示 -->
 					<td colspan="4">最近の出品はありません。</td>
 				</tr>
 			</tbody>
 		</table>
-		<!-- 最近の注文セクション見出し -->
-		<h2>最近の注文</h2>
-		<!-- 最近の注文を表形式で表示 -->
+
+		<h2 class="section-title">現在の取引状況</h2>
 		<table>
-			<!-- テーブルの列見出し -->
 			<thead>
 				<tr>
 					<th>商品名</th>
 					<th>購入者</th>
 					<th>価格</th>
-					<th>ステータス</th>
+					<th>取引ステータス</th>
+					<th>商品状態</th>
 				</tr>
 			</thead>
-			<!-- テーブル本体。recentOrders をループ表示 -->
 			<tbody>
-				<!-- recentOrders を 1 件ずつ行として描画 -->
-				<tr th:each="order : ${recentOrders}">
-					<!-- 注文の商品名を表示 -->
+				<tr th:each="order : ${activeOrders}">
 					<td th:text="${order.item.name}"></td>
-					<!-- 購入者の表示名を表示 -->
 					<td th:text="${order.buyer.name}"></td>
-					<!-- 価格をフォーマットして表示 -->
-					<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0,
-					'POINT')}"></td>
-					<!-- 注文ステータス（購入済/発送済）を表示 -->
-					<td th:text="${order.status}"></td>
+					<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></td>
+					<td th:text="${order.status}"
+						th:class="${order.status == '出品中' ? 'status-badge-success' : 'status-badge-active'}"></td>
+					<td th:text="${order.item.status}"></td>
 				</tr>
-				<!-- 要素が空の場合のメッセージ行 -->
-				<tr th:if="${#lists.isEmpty(recentOrders)}">
-					<!-- 全列結合で「最近の注文はありません」を表示 -->
-					<td colspan="4">最近の注文はありません。</td>
+				<tr th:if="${#lists.isEmpty(activeOrders)}">
+					<td colspan="5">現在進行中の取引はありません。</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2 class="section-title">キャンセル完了済み履歴</h2>
+		<table>
+			<thead>
+				<tr>
+					<th>商品名</th>
+					<th>元の購入者</th>
+					<th>価格</th>
+					<th>取引結果</th>
+					<th>現在の商品の状態</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="order : ${finalizedCancels}">
+					<td th:text="${order.item.name}"></td>
+					<td th:text="${order.buyer.name}"></td>
+					<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></td>
+					<td style="color: #666;">キャンセル済（返金完了）</td>
+					<td>
+						<span class="status-badge-success" th:text="${order.item.status}"></span>
+					</td>
+				</tr>
+				<tr th:if="${#lists.isEmpty(finalizedCancels)}">
+					<td colspan="5">キャンセル済みの履歴はありません。</td>
 				</tr>
 			</tbody>
 		</table>
