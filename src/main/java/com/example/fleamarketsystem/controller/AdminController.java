@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.fleamarketsystem.entity.Item;
 import com.example.fleamarketsystem.service.AdminUserService;
 import com.example.fleamarketsystem.service.AppOrderService;
+import com.example.fleamarketsystem.service.ContactService;
 import com.example.fleamarketsystem.service.ItemService;
 
 @Controller
@@ -30,14 +31,15 @@ public class AdminController {
 
 	private final ItemService itemService;
 	private final AppOrderService appOrderService;
-	private final AdminUserService adminUserService; // 追加
+	private final AdminUserService adminUserService;
+	private final ContactService contactService;
 
-	// コンストラクタに adminUserService を追加
 	public AdminController(ItemService itemService, AppOrderService appOrderService,
-			AdminUserService adminUserService) {
+			AdminUserService adminUserService, ContactService contactService) {
 		this.itemService = itemService;
 		this.appOrderService = appOrderService;
 		this.adminUserService = adminUserService;
+		this.contactService = contactService;
 	}
 
 	@GetMapping("/items")
@@ -57,6 +59,7 @@ public class AdminController {
 	    model.addAttribute("activeOrders", appOrderService.getActiveOrders());
 	    model.addAttribute("pendingCancels", appOrderService.getPendingCancelOrders());
 	    model.addAttribute("finalizedCancels", appOrderService.getFinalizedCancelledOrders());
+	    model.addAttribute("unreadContactCount", contactService.getUnreadCount());
 	    
 	    return "admin_dashboard";
 	}
@@ -111,6 +114,24 @@ public class AdminController {
 			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
 		}
 		return "redirect:/admin/dashboard";
+	}
+
+	@GetMapping("/contacts")
+	public String showContacts(Model model) {
+		model.addAttribute("contacts", contactService.getAllContacts());
+		model.addAttribute("unreadCount", contactService.getUnreadCount());
+		return "admin_contacts";
+	}
+
+	@PostMapping("/contacts/{id}/read")
+	public String markContactAsRead(@PathVariable("id") Long contactId, RedirectAttributes redirectAttributes) {
+		try {
+			contactService.markAsRead(contactId);
+			redirectAttributes.addFlashAttribute("successMessage", "既読にしました。");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+		}
+		return "redirect:/admin/contacts";
 	}
 
 	@GetMapping("/statistics/csv")

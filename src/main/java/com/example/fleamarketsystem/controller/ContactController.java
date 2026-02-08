@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.fleamarketsystem.entity.User;
+import com.example.fleamarketsystem.service.ContactService;
 import com.example.fleamarketsystem.service.LineMessagingService;
 import com.example.fleamarketsystem.service.UserService;
 
@@ -18,10 +19,13 @@ public class ContactController {
 
 	private final UserService userService;
 	private final LineMessagingService lineMessagingService;
+	private final ContactService contactService;
 
-	public ContactController(UserService userService, LineMessagingService lineMessagingService) {
+	public ContactController(UserService userService, LineMessagingService lineMessagingService,
+			ContactService contactService) {
 		this.userService = userService;
 		this.lineMessagingService = lineMessagingService;
+		this.contactService = contactService;
 	}
 
 	@GetMapping("/contact")
@@ -49,6 +53,8 @@ public class ContactController {
 		}
 		User user = userService.getUserByEmail(userDetails.getUsername())
 				.orElseThrow(() -> new RuntimeException("User not found"));
+
+		contactService.saveContact(user, subject, message);
 
 		String text = String.format("【お問い合わせ】\nユーザー: %s (%s)\n件名: %s\n内容:\n%s",
 				user.getName(), user.getEmail(), subject, message);
