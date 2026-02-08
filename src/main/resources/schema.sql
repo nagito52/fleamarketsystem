@@ -1,3 +1,4 @@
+drop table if exists contact;
 drop table if exists review;
 drop table if exists chat;
 drop table if exists favorite_item;
@@ -17,6 +18,15 @@ create table users (
 	enabled boolean not null default true,  -- enabled フラグ
 	banned BOOLEAN NOT NULL DEFAULT FALSE,
     ban_reason VARCHAR(255)
+);
+
+create table contact (
+	id bigserial primary key,
+	user_id bigint not null references users(id),
+	subject varchar(255) not null,
+	message text not null,
+	created_at timestamp without time zone not null,
+	read boolean not null default false
 );
 
 create table category (
