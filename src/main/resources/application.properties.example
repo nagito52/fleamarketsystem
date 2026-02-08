@@ -1,4 +1,4 @@
-spring.application.name=fleamarketsystem
+spring.application.name=Fairsty
 
 # ==== PostgreSQL 接続 ====
 spring.datasource.driver-class-name=org.postgresql.Driver

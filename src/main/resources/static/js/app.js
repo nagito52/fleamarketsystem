@@ -1,5 +1,5 @@
 /**
- * フリマアプリ - メインJavaScript
+ * Fairsty - メインJavaScript
  * UI インタラクション、アニメーション、ユーティリティ
  */
 
