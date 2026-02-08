@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-spring-boot-dashboard",
+    "vscjava.vscode-spring-initializr",
+    "vscjava.vscode-spring-boot",
+    "vmware.vscode-spring-boot",
+    "pivotal.vscode-boot-dev-pack"
+  ]
+}

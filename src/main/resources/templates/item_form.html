@@ -1,87 +1,90 @@
-<!-- HTML5 文書であることを宣言 -->
 <!DOCTYPE html>
-<!-- ルート要素。言語=日本語、Thymeleaf の xmlns を宣言 -->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- ヘッダー領域（メタ・タイトル・スタイル） -->
-
 <head>
-	<!-- 文字コードを UTF-8 に設定 -->
 	<meta charset="UTF-8">
-	<!-- 新規出品か編集かでタイトルを切り替え -->
-	<title th:text="${item.id == null ? '商品出品' : '商品編集'}"></title>
-	<!-- 共通スタイルシートを読み込み -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title th:text="${item.id == null ? '商品出品' : '商品編集'} + ' - フリマアプリ'"></title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<!-- 画面本体 -->
-
 <body>
-	<!-- レイアウト用の中央コンテナ -->
-	<div class="container">
-		<!-- 見出しも新規/編集で切り替え -->
-		<h1 th:text="${item.id == null ? '商品出品' : '商品編集'}"></h1>
-		<!-- 画像アップロード失敗などのエラーを表示 -->
-		<div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
-		<!-- 新規: /items POST、編集: /items/{id} POST。画像アップロードのため enctype 必須 -->
-		<form th:action="${item.id == null ? '/items' : '/items/' + item.id}" method="post"
-			enctype="multipart/form-data">
-			<!-- 編集時のみ HiddenHttpMethodFilter を想定し PUT メソッドを指定（サンプルのまま）
--->
-			<input type="hidden" th:if="${item.id != null}" name="_method" value="put">
-			<!-- 商品名の入力 -->
-			<p>
-				<!-- 商品名ラベル -->
-				<label for="name">商品名:</label>
-				<!-- 商品名テキストボックス（必須） -->
-				<input type="text" id="name" name="name" th:value="${item.name}" required>
-			</p>
-			<!-- 商品説明の入力 -->
-			<p>
-				<!-- 商品説明ラベル -->
-				<label for="description">商品説明:</label>
-				<!-- 複数行テキストエリア。既存値を表示 -->
-				<textarea id="description" name="description" rows="5" th:text="${item.description}"></textarea>
-			</p>
-			<!-- 価格の入力 -->
-			<p>
-				<!-- 価格ラベル -->
-				<label for="price">価格 (¥):</label>
-				<!-- 数値入力（小数 2 桁ステップ） -->
-				<input type="number" id="price" name="price" th:value="${item.price}" step="0.01" required>
-			</p>
-			<!-- カテゴリの選択 -->
-			<p>
-				<!-- カテゴリラベル -->
-				<label for="categoryId">カテゴリ:</label>
-				<!-- 必須のセレクトボックス。初期値は選択してください -->
-				<select id="categoryId" name="categoryId" required>
-					<!-- 空選択のプレースホルダ -->
-					<option value="">選択してください</option>
-					<!-- categories をループして option を生成。既存カテゴリと一致時は選択 -->
-					<option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.name}"
-						th:selected="${item.category != null and item.category.id ==
-	category.id}"></option>
-				</select>
-			</p>
-			<!-- 画像アップロード -->
-			<p>
-				<!-- 画像ラベル -->
-				<label for="image">商品画像:</label>
-				<!-- 画像ファイル選択（画像のみ許可） -->
-				<input type="file" id="image" name="image" accept="image/*">
-				<!-- 既存画像があればサムネイル表示 -->
-				<span th:if="${item.imageUrl}">現在の画像: <img th:src="${item.imageUrl}"
-						style="width: 100px; height: auto;"></span>
-			</p>
-			<!-- 送信/キャンセルボタン -->
-			<div class="button-group">
-				<!-- 新規なら「出品する」、編集なら「更新する」 -->
-				<button type="submit" th:text="${item.id == null ? '出品する' : '更新する
-	'}"></button>
-				<!-- 一覧へ戻る -->
-				<a th:href="@{/items}" class="button secondary">キャンセル</a>
-			</div>
-		</form>
-	</div>
-</body>
+	<!-- Navbar -->
+	<nav class="navbar">
+		<a th:href="@{/items}" class="navbar-brand">
+			<i class="fas fa-store"></i> フリマアプリ
+		</a>
+		<div class="navbar-nav">
+			<a th:href="@{/items}"><i class="fas fa-shopping-bag"></i> 商品一覧</a>
+			<a th:href="@{/my_page}"><i class="fas fa-user-circle"></i> マイページ</a>
+		</div>
+	</nav>
 
+	<div class="container-narrow">
+		<a th:href="@{/items}" class="back-link">
+			<i class="fas fa-arrow-left"></i> 商品一覧に戻る
+		</a>
+
+		<div class="card animate-in">
+			<div class="page-header" style="margin-bottom: 24px;">
+				<h1>
+					<i th:if="${item.id == null}" class="fas fa-plus-circle" style="color: var(--primary);"></i>
+					<i th:if="${item.id != null}" class="fas fa-edit" style="color: var(--primary);"></i>
+					<span th:text="${item.id == null ? '商品出品' : '商品編集'}"></span>
+				</h1>
+			</div>
+
+			<div th:if="${errorMessage}" class="alert-danger">
+				<i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+			</div>
+
+			<form th:action="${item.id == null ? '/items' : '/items/' + item.id}" method="post" enctype="multipart/form-data">
+				<input type="hidden" th:if="${item.id != null}" name="_method" value="put">
+
+				<div class="form-group">
+					<label for="name"><i class="fas fa-box"></i> 商品名</label>
+					<input type="text" id="name" name="name" class="form-control" th:value="${item.name}" placeholder="商品名を入力" required>
+				</div>
+
+				<div class="form-group">
+					<label for="description"><i class="fas fa-align-left"></i> 商品説明</label>
+					<textarea id="description" name="description" class="form-control" rows="5" placeholder="商品の状態や特徴を記載..." th:text="${item.description}"></textarea>
+				</div>
+
+				<div class="form-group">
+					<label for="price"><i class="fas fa-yen-sign"></i> 価格</label>
+					<input type="number" id="price" name="price" class="form-control" th:value="${item.price}" step="1" min="1" placeholder="1000" required>
+				</div>
+
+				<div class="form-group">
+					<label for="categoryId"><i class="fas fa-tag"></i> カテゴリ</label>
+					<select id="categoryId" name="categoryId" class="form-control" required>
+						<option value="">選択してください</option>
+						<option th:each="category : ${categories}"
+							th:value="${category.id}"
+							th:text="${category.name}"
+							th:selected="${item.category != null and item.category.id == category.id}"></option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="image"><i class="fas fa-camera"></i> 商品画像</label>
+					<input type="file" id="image" name="image" class="form-control" accept="image/*">
+					<div th:if="${item.imageUrl}" style="margin-top: 12px;">
+						<p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">現在の画像：</p>
+						<img th:src="${item.imageUrl}" style="width: 150px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+					</div>
+				</div>
+
+				<div class="btn-group" style="margin-top: 24px;">
+					<button type="submit" class="btn btn-primary btn-lg" th:text="${item.id == null ? '出品する' : '更新する'}"></button>
+					<a th:href="@{/items}" class="btn btn-secondary">キャンセル</a>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script th:src="@{/js/app.js}"></script>
+</body>
 </html>

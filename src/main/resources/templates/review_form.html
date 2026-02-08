@@ -1,56 +1,75 @@
-<!-- HTML5 文書であることを宣言 -->
 <!DOCTYPE html>
-<!-- ルート要素：日本語ページ／Thymeleaf と Spring Security Dialect を宣言 -->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- ヘッダー領域（メタ・タイトル・スタイル） -->
-
 <head>
-	<!-- 文字コードを UTF-8 に指定 -->
 	<meta charset="UTF-8">
-	<!-- ブラウザタブに表示するタイトル -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>商品評価 - フリマアプリ</title>
-	<!-- 共通スタイルシートの読み込み -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<!-- 本文開始 -->
-
 <body>
-	<!-- レイアウト用の中央コンテナ -->
-	<div class="container">
-		<!-- ページ見出し -->
-		<h1>商品評価</h1>
-		<!-- 対象商品名と出品者名を差し込み表示 -->
-		<p>商品「<span th:text="${order.item.name}"></span>」の出品者「<span
-				th:text="${order.item.seller.name}"></span>」を評価してください。</p>
-		<!-- エラーメッセージ（Flash 属性など）を条件表示 -->
-		<div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
-		<!-- 評価送信フォーム（POST /reviews） -->
-		<form th:action="@{/reviews}" method="post">
-			<!-- 対象注文 ID を hidden で送信（サーバ側で正当性チェック） -->
-			<input type="hidden" name="orderId" th:value="${order.id}">
-			<!-- 評価点の入力行 -->
-			<p>
-				<!-- 評価のラベル（1〜5） -->
-				<label for="rating">評価 (1-5):</label>
-				<!-- 1〜5 の整数のみ許可し必須化 -->
-				<input type="number" id="rating" name="rating" min="1" max="5" required>
-			</p>
-			<!-- コメント入力行 -->
-			<p>
-				<!-- コメントのラベル（任意項目） -->
-				<label for="comment">コメント (任意):</label>
-				<!-- 任意のテキスト（複数行） -->
-				<textarea id="comment" name="comment" rows="5"></textarea>
-			</p>
-			<!-- ボタン群（送信／キャンセル） -->
-			<div class="button-group">
-				<!-- 送信ボタン：評価を登録 -->
-				<button type="submit">評価を送信</button>
-				<!-- キャンセル：購入履歴へ戻る -->
-				<a th:href="@{/my_page/orders}" class="button secondary">キャンセル</a>
-			</div>
-		</form>
-	</div>
-</body>
+	<!-- Navbar -->
+	<nav class="navbar">
+		<a th:href="@{/items}" class="navbar-brand">
+			<i class="fas fa-store"></i> フリマアプリ
+		</a>
+		<div class="navbar-nav">
+			<a th:href="@{/items}"><i class="fas fa-shopping-bag"></i> 商品一覧</a>
+			<a th:href="@{/my_page}"><i class="fas fa-user-circle"></i> マイページ</a>
+		</div>
+	</nav>
 
+	<div class="container-narrow" style="margin-top: 40px;">
+		<div class="card animate-in">
+			<div style="text-align: center; margin-bottom: 24px;">
+				<i class="fas fa-star" style="font-size: 2.5rem; color: var(--accent-dark); margin-bottom: 12px; display: block;"></i>
+				<h1 style="font-size: 1.5rem; font-weight: 800;">商品評価</h1>
+				<p style="color: var(--text-secondary);">
+					商品「<strong th:text="${order.item.name}"></strong>」の出品者
+					「<strong th:text="${order.item.seller.name}"></strong>」を評価してください。
+				</p>
+			</div>
+
+			<div th:if="${errorMessage}" class="alert-danger">
+				<i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+			</div>
+
+			<form th:action="@{/reviews}" method="post">
+				<input type="hidden" name="orderId" th:value="${order.id}">
+
+				<div class="form-group">
+					<label for="rating"><i class="fas fa-star"></i> 評価（1〜5）</label>
+					<div class="star-rating" id="star-rating">
+						<input type="radio" name="rating" value="5" id="star5" required>
+						<label for="star5" title="5 - 最高">★</label>
+						<input type="radio" name="rating" value="4" id="star4">
+						<label for="star4" title="4 - 良い">★</label>
+						<input type="radio" name="rating" value="3" id="star3">
+						<label for="star3" title="3 - 普通">★</label>
+						<input type="radio" name="rating" value="2" id="star2">
+						<label for="star2" title="2 - やや不満">★</label>
+						<input type="radio" name="rating" value="1" id="star1">
+						<label for="star1" title="1 - 不満">★</label>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label for="comment"><i class="fas fa-comment"></i> コメント（任意）</label>
+					<textarea id="comment" name="comment" class="form-control" rows="5" placeholder="取引のご感想をお聞かせください..."></textarea>
+				</div>
+
+				<div class="btn-group" style="margin-top: 24px;">
+					<button type="submit" class="btn btn-primary btn-lg">
+						<i class="fas fa-paper-plane"></i> 評価を送信
+					</button>
+					<a th:href="@{/my_page/orders}" class="btn btn-secondary">キャンセル</a>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script th:src="@{/js/app.js}"></script>
+</body>
 </html>

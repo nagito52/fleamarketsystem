@@ -1,62 +1,88 @@
-<!-- HTML5 文書であることを宣言 -->
 <!DOCTYPE html>
-<!-- ルート要素。言語=日本語、Thymeleaf と Spring Security Dialect を宣言 -->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- ヘッダー領域：メタ情報・タイトル・スタイル読込 -->
-
 <head>
-	<!-- 文字コードを UTF-8 に設定 -->
 	<meta charset="UTF-8">
-	<!-- ブラウザタブに表示されるページタイトル -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>出品管理 - フリマアプリ</title>
-	<!-- 共通スタイルシートの読み込み -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<!-- 画面本体開始 -->
-
 <body>
-	<div class="container">
-		<h1>出品管理</h1>
-		<p>あなたが出品した商品の一覧です。</p>
-
-		<div th:if="${errorMessage}"
-			style="color: white; background-color: #d32f2f; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
-			<p th:text="${errorMessage}"></p>
+	<!-- Navbar -->
+	<nav class="navbar">
+		<a th:href="@{/items}" class="navbar-brand">
+			<i class="fas fa-store"></i> フリマアプリ
+		</a>
+		<div class="navbar-nav">
+			<a th:href="@{/items}"><i class="fas fa-shopping-bag"></i> 商品一覧</a>
+			<a th:href="@{/my_page}"><i class="fas fa-user-circle"></i> マイページ</a>
 		</div>
-		<div th:if="${successMessage}"
-			style="color: white; background-color: #28a745; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
-			<p th:text="${successMessage}"></p>
+	</nav>
+
+	<div class="container">
+		<a th:href="@{/my_page}" class="back-link">
+			<i class="fas fa-arrow-left"></i> マイページに戻る
+		</a>
+
+		<div class="page-header">
+			<h1><i class="fas fa-store"></i> 出品管理</h1>
+			<p>あなたが出品した商品の一覧です。</p>
+		</div>
+
+		<!-- Flash Messages -->
+		<div th:if="${errorMessage}" class="alert-danger">
+			<i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+		</div>
+		<div th:if="${successMessage}" class="alert-success">
+			<i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
 		</div>
 
 		<div class="item-grid">
-			<div class="item-card" th:each="item : ${sellingItems}">
+			<div class="item-card animate-in" th:each="item : ${sellingItems}">
 				<a th:href="@{/items/{id}(id=${item.id})}">
 					<img th:src="${item.imageUrl != null ? item.imageUrl : '/images/placeholder.png'}" alt="商品画像">
-					<h3 th:text="${item.name}"></h3>
-					<p class="price" th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></p>
-					<p class="status" th:text="${item.status}"></p>
+					<div class="item-card-body">
+						<h3 th:text="${item.name}"></h3>
+						<p class="price" th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></p>
+						<span class="badge"
+							th:classappend="${item.status == '出品中' ? 'badge-selling' : (item.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
+							th:text="${item.status}"></span>
+					</div>
 				</a>
-
-				<div class="button-group">
-					<a th:if="${item.status != '売却済'}" th:href="@{/items/{id}/edit(id=${item.id})}"
-						th:class="${item.status == '取引中' ? 'button secondary disabled' : 'button secondary'}"
+				<div class="btn-group" style="padding: 0 16px 16px;">
+					<a th:if="${item.status != '売却済'}"
+						th:href="@{/items/{id}/edit(id=${item.id})}"
+						class="btn btn-sm"
+						th:classappend="${item.status == '取引中' ? 'btn-secondary' : 'btn-teal'}"
 						th:style="${item.status == '取引中' ? 'pointer-events: none; opacity: 0.5;' : ''}">
-						編集
+						<i class="fas fa-edit"></i> 編集
 					</a>
-
-					<span th:if="${item.status == '売却済'}"
-						style="color: #666; font-weight: bold; background: #eee; padding: 5px 15px; border-radius: 4px; display: inline-block;">
+					<span th:if="${item.status == '売却済'}" class="badge badge-sold" style="padding: 8px 14px; font-size: 0.8rem;">
 						売却済（編集不可）
 					</span>
-
 					<form th:action="@{/items/{id}/delete(id=${item.id})}" method="post" style="display:inline;">
-						<button type="submit" class="button danger" th:disabled="${item.status == '取引中'}"
-							onclick="return confirm('本当にこの商品を削除しますか？');">削除</button>
+						<button type="submit" class="btn btn-sm btn-danger"
+							th:disabled="${item.status == '取引中'}"
+							onclick="return confirm('本当にこの商品を削除しますか？');">
+							<i class="fas fa-trash"></i> 削除
+						</button>
 					</form>
 				</div>
 			</div>
 		</div>
-	</div>
-</body>
 
+		<!-- Empty State -->
+		<div th:if="${#lists.isEmpty(sellingItems)}" class="empty-state">
+			<i class="fas fa-box-open" style="display:block;"></i>
+			<p>出品中の商品はありません。</p>
+			<a th:href="@{/items/new}" class="btn btn-primary">
+				<i class="fas fa-plus-circle"></i> 商品を出品する
+			</a>
+		</div>
+	</div>
+
+	<script th:src="@{/js/app.js}"></script>
+</body>
 </html>

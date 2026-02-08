@@ -1,56 +1,92 @@
-<!-- HTML5 文書であることを宣言 -->
 <!DOCTYPE html>
-<!-- ルート要素：日本語ページ／Thymeleaf と Spring Security Dialect を宣言 -->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- ヘッダー領域（メタ・タイトル・スタイル） -->
-
 <head>
-	<!-- 文字コードを UTF-8 に指定 -->
 	<meta charset="UTF-8">
-	<!-- ブラウザタブに表示するタイトル -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>マイページ - フリマアプリ</title>
-	<!-- 共通スタイルシートの読み込み -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<!-- 本文開始 -->
-
 <body>
-	<!-- レイアウト用の中央コンテナ -->
-	<div class="container">
-		<!-- ページ見出し -->
-		<h1>マイページ</h1>
-		<!-- ログイン中ユーザー名を差し込み表示 -->
-		<p>ようこそ、<span th:text="${user.name}"></span>さん！</p>
-		<!-- 機能ナビゲーション -->
-		<div class="main-nav">
-			<!-- 出品管理ページへのリンク -->
-			<a th:href="@{/my_page/selling}" class="button">出品管理</a>
-			<!-- 購入履歴ページへのリンク -->
-			<a th:href="@{/my_page/orders}" class="button">購入履歴</a>
-			<!-- 販売履歴ページへのリンク -->
-			<a th:href="@{/my_page/sales}" class="button">販売履歴</a>
-			<!-- お気に入りページへのリンク -->
-			<a th:href="@{/my_page/favorites}" class="button">お気に入り</a>
-			<!-- 自分が送信した評価一覧ページへのリンク -->
-			<a th:href="@{/my_page/reviews}" class="button">自分の評価</a>
-			<a th:href="@{/reviews/received}">自分への評価を確認</a>
-			<!-- 商品一覧へ戻る導線（サブカラー） -->
-			<a th:href="@{/items}" class="button secondary">商品一覧に戻る</a>
-			<!-- ログアウト POST フォーム（ボタンレイアウトのためインライン表示） -->
-			<form th:action="@{/logout}" method="post" style="display:inline;">
-				<!-- ログアウトボタン（強調のため danger クラス） -->
-				<button type="submit" class="button danger">ログアウト</button>
+	<!-- Navbar -->
+	<nav class="navbar">
+		<a th:href="@{/items}" class="navbar-brand">
+			<i class="fas fa-store"></i> フリマアプリ
+		</a>
+		<div class="navbar-nav">
+			<a th:href="@{/items}"><i class="fas fa-shopping-bag"></i> 商品一覧</a>
+			<a th:href="@{/items/new}"><i class="fas fa-plus-circle"></i> 出品する</a>
+			<form th:action="@{/logout}" method="post" style="display:inline; margin:0;">
+				<button type="submit" class="nav-btn-outline"><i class="fas fa-sign-out-alt"></i> ログアウト</button>
 			</form>
 		</div>
-		<!-- アカウント情報の見出し -->
-		<h2>アカウント情報</h2>
-		<!-- 名前ラベルと値を表示 -->
-		<p><strong>名前:</strong> <span th:text="${user.name}"></span></p>
-		<!-- メールラベルと値を表示 -->
-		<p><strong>メールアドレス:</strong> <span th:text="${user.email}"></span></p>
-		<!-- 役割ラベルと値を表示（USER/ADMIN） -->
-		<p><strong>役割:</strong> <span th:text="${user.role}"></span></p>
-	</div>
-</body>
+	</nav>
 
+	<div class="container">
+		<!-- Profile Card -->
+		<div class="profile-card animate-in">
+			<p style="opacity: 0.8; font-size: 0.9rem; margin-bottom: 4px;">ようこそ！</p>
+			<h2 th:text="${user.name} + ' さん'"></h2>
+			<p class="profile-email" th:text="${user.email}"></p>
+			<span class="profile-role" th:text="${user.role == 'ROLE_ADMIN' ? '管理者' : '一般ユーザー'}"></span>
+		</div>
+
+		<!-- Navigation Cards -->
+		<div class="page-header">
+			<h1><i class="fas fa-compass"></i> メニュー</h1>
+		</div>
+
+		<div class="mypage-nav">
+			<a th:href="@{/my_page/selling}" class="nav-card">
+				<i class="fas fa-store"></i>
+				<span>出品管理</span>
+			</a>
+			<a th:href="@{/my_page/orders}" class="nav-card">
+				<i class="fas fa-shopping-cart"></i>
+				<span>購入履歴</span>
+			</a>
+			<a th:href="@{/my_page/sales}" class="nav-card">
+				<i class="fas fa-coins"></i>
+				<span>販売履歴</span>
+			</a>
+			<a th:href="@{/my_page/favorites}" class="nav-card">
+				<i class="fas fa-heart"></i>
+				<span>お気に入り</span>
+			</a>
+			<a th:href="@{/my_page/reviews}" class="nav-card">
+				<i class="fas fa-star"></i>
+				<span>自分の評価</span>
+			</a>
+			<a th:href="@{/reviews/received}" class="nav-card">
+				<i class="fas fa-comment-dots"></i>
+				<span>届いた評価</span>
+			</a>
+		</div>
+
+		<!-- Account Info -->
+		<div class="card" style="margin-top: 28px;">
+			<div class="card-header">
+				<h2><i class="fas fa-id-card"></i> アカウント情報</h2>
+			</div>
+			<div style="display: grid; gap: 12px;">
+				<div class="info-row">
+					<span class="info-label" style="color: var(--text-secondary);"><i class="fas fa-user"></i> 名前</span>
+					<span class="info-value" th:text="${user.name}"></span>
+				</div>
+				<div class="info-row">
+					<span class="info-label" style="color: var(--text-secondary);"><i class="fas fa-envelope"></i> メール</span>
+					<span class="info-value" th:text="${user.email}"></span>
+				</div>
+				<div class="info-row">
+					<span class="info-label" style="color: var(--text-secondary);"><i class="fas fa-shield-alt"></i> 権限</span>
+					<span class="info-value" th:text="${user.role}"></span>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script th:src="@{/js/app.js}"></script>
+</body>
 </html>
