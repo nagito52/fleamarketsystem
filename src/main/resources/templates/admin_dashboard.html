@@ -111,7 +111,7 @@
 						<td><span class="price" th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
 						<td>
 							<span class="badge"
-								th:classappend="${order.status == '出品中' ? 'badge-selling' : 'badge-trading'}"
+								th:classappend="${order.status == '出品中' ? 'badge-selling' : (order.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
 								th:text="${order.status}"></span>
 						</td>
 						<td>
