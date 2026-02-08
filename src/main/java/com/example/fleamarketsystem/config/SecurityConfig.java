@@ -80,6 +80,7 @@ public class SecurityConfig {
 			return org.springframework.security.core.userdetails.User.builder()
 					.username(user.getEmail())
 					.password(user.getPassword())
+					.disabled(!user.isEnabled())
 					// 権限に "ROLE_" が付いていない場合に備え、正規化して渡す
 					.authorities(user.getRole().startsWith("ROLE_") ? user.getRole() : "ROLE_" + user.getRole())
 					.build();

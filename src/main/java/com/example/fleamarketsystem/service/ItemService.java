@@ -13,22 +13,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.fleamarketsystem.entity.Item;
 import com.example.fleamarketsystem.entity.User;
-import com.example.fleamarketsystem.repository.FavoriteItemRepository;
 import com.example.fleamarketsystem.repository.ItemRepository;
 
 @Service
 public class ItemService {
 
 	private final ItemRepository itemRepository;
-	private final CategoryService categoryService;
 	private final CloudinaryService cloudinaryService;
 
-	public ItemService(ItemRepository itemRepository, CategoryService categoryService,
-			CloudinaryService cloudinaryService, FavoriteItemRepository favoriteItemRepository) {
+	public ItemService(ItemRepository itemRepository, CloudinaryService cloudinaryService) {
 		this.itemRepository = itemRepository;
-		this.categoryService = categoryService;
 		this.cloudinaryService = cloudinaryService;
-
 	}
 
 	public Page<Item> searchItems(String keyword, Long categoryId, int page, int size) {

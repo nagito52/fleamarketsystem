@@ -24,15 +24,13 @@ public class AppOrderService {
 
 	private final AppOrderRepository appOrderRepository;
 	private final ItemRepository itemRepository;
-	private final ItemService itemService;
 	private final StripeService stripeService;
 	private final LineMessagingService lineMessagingService;
 
 	public AppOrderService(AppOrderRepository appOrderRepository, ItemRepository itemRepository,
-			ItemService itemService, StripeService stripeService, LineMessagingService lineMessagingService) {
+			StripeService stripeService, LineMessagingService lineMessagingService) {
 		this.appOrderRepository = appOrderRepository;
 		this.itemRepository = itemRepository;
-		this.itemService = itemService;
 		this.stripeService = stripeService;
 		this.lineMessagingService = lineMessagingService;
 	}
@@ -224,6 +222,33 @@ public class AppOrderService {
 		try {
 			String message = String.format("【キャンセル確定】返金処理が完了しました。\n商品名: %s\n価格: ¥%s",
 					item.getName(), order.getPrice());
+			lineMessagingService.sendMessage(message);
+		} catch (Exception e) {
+			System.err.println("LINE通知失敗: " + e.getMessage());
+		}
+	}
+
+	@Transactional
+	public void forceCancelByAdmin(Long orderId, String reason) throws StripeException {
+		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
+		if (!AppOrder.STATUS_TRADING.equals(order.getStatus())) {
+			throw new IllegalStateException("取引中の商品のみ強制キャンセルできます。");
+		}
+		if (order.getPaymentIntentId() != null && !order.getPaymentIntentId().isBlank()) {
+			stripeService.refund(order.getPaymentIntentId());
+		}
+
+		order.setStatus(AppOrder.STATUS_CANCELLED);
+		Item item = order.getItem();
+		item.setStatus("出品中");
+
+		itemRepository.saveAndFlush(item);
+		appOrderRepository.saveAndFlush(order);
+
+		try {
+			String reasonText = (reason == null || reason.isBlank()) ? "理由: (未入力)" : "理由: " + reason;
+			String message = String.format("【強制キャンセル】運営側で取引をキャンセルしました。\n商品名: %s\n価格: ¥%s\n%s",
+					item.getName(), order.getPrice(), reasonText);
 			lineMessagingService.sendMessage(message);
 		} catch (Exception e) {
 			System.err.println("LINE通知失敗: " + e.getMessage());

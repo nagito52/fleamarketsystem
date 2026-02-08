@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.fleamarketsystem.entity.User;
-import com.example.fleamarketsystem.repository.AppOrderRepository;
 import com.example.fleamarketsystem.repository.UserRepository;
 
 @Service
@@ -18,11 +17,9 @@ public class AdminUserService {
 
 	private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT_LOG");
 	private final UserRepository userRepository;
-	private final AppOrderRepository appOrderRepository;
 
-	public AdminUserService(UserRepository userRepository, AppOrderRepository appOrderRepository) {
+	public AdminUserService(UserRepository userRepository) {
 		this.userRepository = userRepository;
-		this.appOrderRepository = appOrderRepository;
 	}
 
 	@Transactional

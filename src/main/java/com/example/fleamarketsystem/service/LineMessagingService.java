@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -37,31 +38,42 @@ public class LineMessagingService {
      * 引数から accessToken を消し、クラス内のフィールドを使用する形に整理しました
      */
     public void sendMessage(String messageText) {
+        if (channelToken == null || channelToken.isBlank()) {
+            logger.warn("LINEメッセージの送信に失敗しました: token が未設定です。");
+            return;
+        }
+        if (adminUserId == null || adminUserId.isBlank()) {
+            logger.warn("LINEメッセージの送信に失敗しました: user-id が未設定です。");
+            return;
+        }
+
         try {
-            // ヘッダーの設定 (JSON形式)
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(channelToken);
-
-            // 送信ボディの作成 (Messaging API 指定のJSON構造)
-            Map<String, Object> body = new HashMap<>();
-            body.put("to", adminUserId);
-            body.put("messages", List.of(
-                Map.of(
-                    "type", "text",
-                    "text", messageText
-                )
-            ));
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-
-            // API実行
-            restTemplate.postForEntity(LINE_API_URL, entity, String.class);
+            sendPush(messageText);
             logger.info("LINE Messaging API で通知を送信しました。");
-
+        } catch (HttpClientErrorException e) {
+            logger.warn("LINEメッセージの送信に失敗しました: status={} body={}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
         } catch (Exception e) {
             // 失敗してもアプリを止めないよう WARN ログを出力
             logger.warn("LINEメッセージの送信に失敗しました: {}", e.getMessage());
         }
+    }
+
+    private void sendPush(String messageText) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(channelToken);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("to", adminUserId);
+        body.put("messages", List.of(
+            Map.of(
+                "type", "text",
+                "text", messageText
+            )
+        ));
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        restTemplate.postForEntity(LINE_API_URL, entity, String.class);
     }
 }
