@@ -192,6 +192,10 @@ public class AppOrderService {
 		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
 		if (!order.getBuyer().getId().equals(buyer.getId()))
 			throw new IllegalStateException("権限がありません。");
+		if (AppOrder.STATUS_SHIPPED.equals(order.getStatus())
+				|| AppOrder.STATUS_COMPLETED.equals(order.getStatus())) {
+			throw new IllegalStateException("発送通知後はキャンセルできません。");
+		}
 		order.setBuyerCancelRequested(true);
 		order.setStatus(AppOrder.STATUS_CANCEL_REQUESTED);
 		appOrderRepository.saveAndFlush(order);

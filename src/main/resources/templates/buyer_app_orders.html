@@ -76,7 +76,8 @@
 										th:text="${order.status == T(com.example.fleamarketsystem.entity.AppOrder).STATUS_SHIPPED ? '到着した' : '発送待ち'}">
 									</button>
 								</form>
-								<form th:action="@{/orders/{id}/cancel-request(id=${order.id})}" method="post" style="display:inline;">
+								<form th:if="${order.status == T(com.example.fleamarketsystem.entity.AppOrder).STATUS_TRADING}"
+									th:action="@{/orders/{id}/cancel-request(id=${order.id})}" method="post" style="display:inline;">
 									<button type="submit" class="btn btn-sm btn-danger"
 										onclick="return confirm('キャンセルを要請しますか？');">
 										<i class="fas fa-times"></i> キャンセル要請
