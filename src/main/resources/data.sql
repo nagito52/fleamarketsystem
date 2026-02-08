@@ -8,3 +8,8 @@ SET name = EXCLUDED.name,
     enabled = EXCLUDED.enabled,
     banned = FALSE,
     ban_reason = NULL;
+
+-- 初期カテゴリ
+INSERT INTO category (name) VALUES
+ ('本'), ('家電'), ('ファッション'), ('おもちゃ'), ('文房具')
+ON CONFLICT (name) DO NOTHING;
