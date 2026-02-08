@@ -1,14 +1,4 @@
-drop table if exists contact;
-drop table if exists review;
-drop table if exists chat;
-drop table if exists favorite_item;
-drop table if exists app_order;
-drop table if exists item;
-drop table if exists category;
-drop table if exists users;
-
-
-create table users (
+create table if not exists users (
 	id bigserial primary key,
 	name varchar(255) not null,  -- nullable = false
 	email varchar(255) unique,  -- unique = true
@@ -20,7 +10,7 @@ create table users (
     ban_reason VARCHAR(255)
 );
 
-create table contact (
+create table if not exists contact (
 	id bigserial primary key,
 	user_id bigint not null references users(id),
 	subject varchar(255) not null,
@@ -29,12 +19,12 @@ create table contact (
 	read boolean not null default false
 );
 
-create table category (
+create table if not exists category (
 	id bigserial primary key,
 	name varchar(255) not null unique  -- nullable = false, unique = true
 );
 
-create table item (
+create table if not exists item (
 	id bigserial primary key,
 	-- 出品者(User)への外部キー
 	user_id bigint not null references users(id), -- seller 
@@ -51,7 +41,7 @@ create table item (
 	created_at timestamp without time zone not null
 );
 
-create table app_order (
+create table if not exists app_order (
 	id bigserial primary key,
 	-- 商品 (Item) への外部キー
 	item_id bigint not null references item(id),
@@ -64,7 +54,7 @@ create table app_order (
 	created_at timestamp without time zone not null
 );
 
-create table chat (
+create table if not exists chat (
 	id bigserial primary key,
 	-- 対象商品 (Item) への外部キー
 	item_id bigint not null references item(id),
@@ -75,7 +65,7 @@ create table chat (
 	created_at timestamp without time zone not null
 );
 
-create table favorite_item (
+create table if not exists favorite_item (
 	id bigserial primary key,
 	-- ユーザー (User) への外部キー
 	user_id bigint not null references users(id),
@@ -85,7 +75,7 @@ create table favorite_item (
 	-- NOTE: user_id と item_id の複合ユニーク制約を Entity に追加しても良いでしょう
 );
 
-create table review (
+create table if not exists review (
 	id bigserial primary key,
 	-- 注文 (AppOrder) への外部キー。unique = true で 1 対 1 を担保
 	order_id bigint not null unique references app_order(id), -- OneToOne
