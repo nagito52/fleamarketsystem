@@ -1,74 +1,90 @@
-<!-- HTML5 文書であることを宣言 -->
 <!DOCTYPE html>
-<!-- ルート要素。日本語と Thymeleaf/Spring Security Dialect を宣言 -->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- ヘッダー領域（メタ・タイトル・スタイル） -->
-
 <head>
-	<!-- 文字コードを UTF-8 に指定 -->
 	<meta charset="UTF-8">
-	<!-- ページタイトルを設定 -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>管理者: 商品管理 - フリマアプリ</title>
-	<!-- 共通スタイルシートを読み込む -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<!-- 表示本体 -->
-
 <body>
+	<!-- Navbar -->
+	<nav class="navbar" style="background: linear-gradient(135deg, #2D3436 0%, #636E72 100%);">
+		<a th:href="@{/admin/dashboard}" class="navbar-brand">
+			<i class="fas fa-shield-alt"></i> 管理者パネル
+		</a>
+		<div class="navbar-nav">
+			<a th:href="@{/admin/dashboard}"><i class="fas fa-tachometer-alt"></i> ダッシュボード</a>
+			<a th:href="@{/admin/users}"><i class="fas fa-users"></i> ユーザー管理</a>
+			<a th:href="@{/admin/statistics}"><i class="fas fa-chart-bar"></i> 統計</a>
+		</div>
+	</nav>
+
 	<div class="container">
-		<h1>管理者: 商品管理</h1>
-		<p>システム内の全ての商品を管理します。</p>
+		<a th:href="@{/admin/dashboard}" class="back-link">
+			<i class="fas fa-arrow-left"></i> ダッシュボードに戻る
+		</a>
 
-		<div th:if="${param.error == 'trading'}"
-			style="color: white; background-color: #d32f2f; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-weight: bold;">
-			エラー: この商品は現在取引中（決済完了〜受取前）のため、削除できません。
+		<div class="page-header">
+			<h1><i class="fas fa-box"></i> 商品管理</h1>
+			<p>システム内の全ての商品を管理します。</p>
 		</div>
 
-		<div th:if="${param.success == 'deleted'}"
-			style="color: white; background-color: #28a745; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-weight: bold;">
-			商品、および関連する注文・評価情報を正常に削除しました。
+		<!-- Flash Messages -->
+		<div th:if="${param.error == 'trading'}" class="alert-danger">
+			<i class="fas fa-exclamation-circle"></i> この商品は現在取引中のため、削除できません。
+		</div>
+		<div th:if="${param.success == 'deleted'}" class="alert-success">
+			<i class="fas fa-check-circle"></i> 商品、および関連する注文・評価情報を正常に削除しました。
 		</div>
 
-		<table>
-			<thead>
-				<tr>
-					<th>ID</th>
-					<th>商品名</th>
-					<th>出品者</th>
-					<th>価格</th>
-					<th>カテゴリ</th>
-					<th>ステータス</th>
-					<th>操作</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="item : ${items}">
-					<td th:text="${item.id}"></td>
-					<td th:text="${item.name}"></td>
-					<td th:text="${item.seller.name}"></td>
-					<td th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0,'POINT')}"></td>
-					<td th:text="${item.category != null ? item.category.name : '未分類'}"></td>
-					<td th:text="${item.status}"></td>
-					<td>
-						<form th:action="@{/admin/items/{id}/delete(id=${item.id})}" method="post"
-							style="display:inline;">
-							<button type="submit"
-								th:class="${item.status == '取引中' ? 'button secondary' : 'button danger'}"
-								th:disabled="${item.status == '取引中'}"
-								th:title="${item.status == '取引中' ? '取引中は削除できません' : '商品を削除します'}"
-								onclick="return confirm('本当にこの商品を削除しますか？');">
-								削除
-							</button>
-						</form>
-					</td>
-				</tr>
-				<tr th:if="${#lists.isEmpty(items)}">
-					<td colspan="7">商品がありません。</td>
-				</tr>
-			</tbody>
-		</table>
-
+		<div class="card">
+			<table>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>商品名</th>
+						<th>出品者</th>
+						<th>価格</th>
+						<th>カテゴリ</th>
+						<th>ステータス</th>
+						<th>操作</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="item : ${items}">
+						<td th:text="${item.id}"></td>
+						<td><strong th:text="${item.name}"></strong></td>
+						<td th:text="${item.seller.name}"></td>
+						<td><span class="price" th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
+						<td th:text="${item.category != null ? item.category.name : '未分類'}"></td>
+						<td>
+							<span class="badge"
+								th:classappend="${item.status == '出品中' ? 'badge-selling' : (item.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
+								th:text="${item.status}"></span>
+						</td>
+						<td>
+							<form th:action="@{/admin/items/{id}/delete(id=${item.id})}" method="post" style="display:inline;">
+								<button type="submit" class="btn btn-sm"
+									th:classappend="${item.status == '取引中' ? 'btn-secondary' : 'btn-danger'}"
+									th:disabled="${item.status == '取引中'}"
+									th:title="${item.status == '取引中' ? '取引中は削除できません' : '商品を削除します'}"
+									onclick="return confirm('本当にこの商品を削除しますか？');">
+									<i class="fas fa-trash"></i> 削除
+								</button>
+							</form>
+						</td>
+					</tr>
+					<tr th:if="${#lists.isEmpty(items)}">
+						<td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">商品がありません。</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
-</body>
 
+	<script th:src="@{/js/app.js}"></script>
+</body>
 </html>

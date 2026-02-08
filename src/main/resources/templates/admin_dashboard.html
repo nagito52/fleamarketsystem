@@ -1,53 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
 <head>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>管理者ダッシュボード - フリマアプリ</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
-	<style>
-		.notification-box {
-			border: 2px solid #d32f2f;
-			padding: 15px;
-			margin-bottom: 30px;
-			border-radius: 8px;
-			background-color: #fff5f5;
-		}
-
-		.status-badge-active {
-			color: #007bff;
-			font-weight: bold;
-		}
-
-		.status-badge-success {
-			color: #28a745;
-			font-weight: bold;
-		}
-
-		.section-title {
-			border-left: 5px solid #333;
-			padding-left: 10px;
-			margin-top: 40px;
-		}
-	</style>
 </head>
-
 <body>
-	<div class="container">
-		<h1>管理者ダッシュボード</h1>
-		<p>ようこそ、<span sec:authentication="name"></span>さん！ (管理者)</p>
-
-		<div class="main-nav">
-			<a th:href="@{/admin/items}" class="button">商品管理</a>
-			<a th:href="@{/admin/users}" class="button">ユーザー管理</a>
-			<a th:href="@{/admin/statistics}" class="button">統計画面</a>
-			<form th:action="@{/logout}" method="post" style="display:inline;">
-				<button type="submit" class="button secondary">ログアウト</button>
+	<!-- Navbar -->
+	<nav class="navbar" style="background: linear-gradient(135deg, #2D3436 0%, #636E72 100%);">
+		<a th:href="@{/admin/dashboard}" class="navbar-brand">
+			<i class="fas fa-shield-alt"></i> 管理者パネル
+		</a>
+		<div class="navbar-nav">
+			<a th:href="@{/admin/items}"><i class="fas fa-box"></i> 商品管理</a>
+			<a th:href="@{/admin/users}"><i class="fas fa-users"></i> ユーザー管理</a>
+			<a th:href="@{/admin/statistics}"><i class="fas fa-chart-bar"></i> 統計</a>
+			<form th:action="@{/logout}" method="post" style="display:inline; margin:0;">
+				<button type="submit" class="nav-btn-outline"><i class="fas fa-sign-out-alt"></i> ログアウト</button>
 			</form>
 		</div>
+	</nav>
 
-		<div th:if="${!#lists.isEmpty(pendingCancels)}" class="notification-box">
-			<h2 style="color: #d32f2f; margin-top: 0;">⚠️ キャンセル確定（返金）が必要な通知</h2>
+	<div class="container">
+		<div class="page-header">
+			<h1><i class="fas fa-tachometer-alt"></i> ダッシュボード</h1>
+			<p>ようこそ、<span sec:authentication="name"></span>さん！（管理者）</p>
+		</div>
+
+		<!-- Cancel Notification -->
+		<div th:if="${!#lists.isEmpty(pendingCancels)}" class="admin-notification animate-in">
+			<h2><i class="fas fa-exclamation-triangle"></i> キャンセル確定（返金）が必要な通知</h2>
 			<table>
 				<thead>
 					<tr>
@@ -59,14 +45,15 @@
 				</thead>
 				<tbody>
 					<tr th:each="order : ${pendingCancels}">
-						<td th:text="${order.item.name}"></td>
+						<td><strong th:text="${order.item.name}"></strong></td>
 						<td th:text="${order.buyer.name}"></td>
-						<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></td>
+						<td><span class="price" th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
 						<td>
-							<form th:action="@{/orders/{id}/final-cancel(id=${order.id})}" method="post"
-								style="display:inline;">
-								<button type="submit" class="button" style="background-color: #d32f2f;"
-									onclick="return confirm('Stripe返金を実行し、商品を再出品状態に戻します。よろしいですか？');">返金を確定する</button>
+							<form th:action="@{/orders/{id}/final-cancel(id=${order.id})}" method="post" style="display:inline;">
+								<button type="submit" class="btn btn-sm btn-danger"
+									onclick="return confirm('Stripe返金を実行し、商品を再出品状態に戻します。よろしいですか？');">
+									<i class="fas fa-undo"></i> 返金を確定する
+								</button>
 							</form>
 						</td>
 					</tr>
@@ -74,82 +61,103 @@
 			</table>
 		</div>
 
-		<h2 class="section-title">最近の出品</h2>
-		<table>
-			<thead>
-				<tr>
-					<th>商品名</th>
-					<th>出品者</th>
-					<th>価格</th>
-					<th>ステータス</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="item : ${recentItems}">
-					<td th:text="${item.name}"></td>
-					<td th:text="${item.seller.name}"></td>
-					<td th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0,'POINT')}"></td>
-					<td th:text="${item.status}"></td>
-				</tr>
-				<tr th:if="${#lists.isEmpty(recentItems)}">
-					<td colspan="4">最近の出品はありません。</td>
-				</tr>
-			</tbody>
-		</table>
+		<!-- Recent Items -->
+		<h2 class="section-title"><i class="fas fa-clock"></i> 最近の出品</h2>
+		<div class="card">
+			<table>
+				<thead>
+					<tr>
+						<th>商品名</th>
+						<th>出品者</th>
+						<th>価格</th>
+						<th>ステータス</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="item : ${recentItems}">
+						<td><strong th:text="${item.name}"></strong></td>
+						<td th:text="${item.seller.name}"></td>
+						<td><span class="price" th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
+						<td>
+							<span class="badge"
+								th:classappend="${item.status == '出品中' ? 'badge-selling' : (item.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
+								th:text="${item.status}"></span>
+						</td>
+					</tr>
+					<tr th:if="${#lists.isEmpty(recentItems)}">
+						<td colspan="4" style="text-align: center; padding: 30px; color: var(--text-secondary);">最近の出品はありません。</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
-		<h2 class="section-title">現在の取引状況</h2>
-		<table>
-			<thead>
-				<tr>
-					<th>商品名</th>
-					<th>購入者</th>
-					<th>価格</th>
-					<th>取引ステータス</th>
-					<th>商品状態</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="order : ${activeOrders}">
-					<td th:text="${order.item.name}"></td>
-					<td th:text="${order.buyer.name}"></td>
-					<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></td>
-					<td th:text="${order.status}"
-						th:class="${order.status == '出品中' ? 'status-badge-success' : 'status-badge-active'}"></td>
-					<td th:text="${order.item.status}"></td>
-				</tr>
-				<tr th:if="${#lists.isEmpty(activeOrders)}">
-					<td colspan="5">現在進行中の取引はありません。</td>
-				</tr>
-			</tbody>
-		</table>
+		<!-- Active Orders -->
+		<h2 class="section-title"><i class="fas fa-exchange-alt"></i> 現在の取引状況</h2>
+		<div class="card">
+			<table>
+				<thead>
+					<tr>
+						<th>商品名</th>
+						<th>購入者</th>
+						<th>価格</th>
+						<th>取引ステータス</th>
+						<th>商品状態</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="order : ${activeOrders}">
+						<td><strong th:text="${order.item.name}"></strong></td>
+						<td th:text="${order.buyer.name}"></td>
+						<td><span class="price" th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
+						<td>
+							<span class="badge"
+								th:classappend="${order.status == '出品中' ? 'badge-selling' : (order.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
+								th:text="${order.status}"></span>
+						</td>
+						<td>
+							<span class="badge"
+								th:classappend="${order.item.status == '出品中' ? 'badge-selling' : (order.item.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
+								th:text="${order.item.status}"></span>
+						</td>
+					</tr>
+					<tr th:if="${#lists.isEmpty(activeOrders)}">
+						<td colspan="5" style="text-align: center; padding: 30px; color: var(--text-secondary);">現在進行中の取引はありません。</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
-		<h2 class="section-title">キャンセル完了済み履歴</h2>
-		<table>
-			<thead>
-				<tr>
-					<th>商品名</th>
-					<th>元の購入者</th>
-					<th>価格</th>
-					<th>取引結果</th>
-					<th>現在の商品の状態</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="order : ${finalizedCancels}">
-					<td th:text="${order.item.name}"></td>
-					<td th:text="${order.buyer.name}"></td>
-					<td th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></td>
-					<td style="color: #666;">キャンセル済（返金完了）</td>
-					<td>
-						<span class="status-badge-success" th:text="${order.item.status}"></span>
-					</td>
-				</tr>
-				<tr th:if="${#lists.isEmpty(finalizedCancels)}">
-					<td colspan="5">キャンセル済みの履歴はありません。</td>
-				</tr>
-			</tbody>
-		</table>
+		<!-- Finalized Cancels -->
+		<h2 class="section-title"><i class="fas fa-history"></i> キャンセル完了済み履歴</h2>
+		<div class="card">
+			<table>
+				<thead>
+					<tr>
+						<th>商品名</th>
+						<th>元の購入者</th>
+						<th>価格</th>
+						<th>取引結果</th>
+						<th>現在の商品状態</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="order : ${finalizedCancels}">
+						<td><strong th:text="${order.item.name}"></strong></td>
+						<td th:text="${order.buyer.name}"></td>
+						<td><span class="price" th:text="'¥' + ${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')}"></span></td>
+						<td><span class="badge badge-cancel">キャンセル済（返金完了）</span></td>
+						<td>
+							<span class="badge badge-selling" th:text="${order.item.status}"></span>
+						</td>
+					</tr>
+					<tr th:if="${#lists.isEmpty(finalizedCancels)}">
+						<td colspan="5" style="text-align: center; padding: 30px; color: var(--text-secondary);">キャンセル済みの履歴はありません。</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
-</body>
 
+	<script th:src="@{/js/app.js}"></script>
+</body>
 </html>

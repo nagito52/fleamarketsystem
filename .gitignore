@@ -20,6 +20,8 @@ build/
 *.iml
 *.ipr
 .vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
 .nbproject/private/
 
 # === OS (Mac / Windows) ===

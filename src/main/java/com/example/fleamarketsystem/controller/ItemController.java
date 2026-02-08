@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import com.example.fleamarketsystem.entity.Category;
 import com.example.fleamarketsystem.entity.Item;
 import com.example.fleamarketsystem.entity.User;
@@ -44,17 +42,12 @@ public class ItemController {
 	private final FavoriteService favoriteService;
 
 	private final ReviewService reviewService;
-	
+
 	private final LineMessagingService lineMessagingService;
 
-	public ItemController(
-			ItemService itemService,
-			CategoryService categoryService,
-			UserService userService,
-			ChatService chatService,
-			FavoriteService favoriteService,
-			ReviewService reviewService,
-			LineMessagingService lineMessagingService) {
+	public ItemController(ItemService itemService, CategoryService categoryService,
+			UserService userService, ChatService chatService, FavoriteService favoriteService,
+			ReviewService reviewService, LineMessagingService lineMessagingService) {
 		this.itemService = itemService;
 		this.categoryService = categoryService;
 		this.userService = userService;
@@ -65,12 +58,10 @@ public class ItemController {
 	}
 
 	@GetMapping
-	public String listItems(
-			@RequestParam(value = "keyword", required = false) String keyword,
+	public String listItems(@RequestParam(value = "keyword", required = false) String keyword,
 			@RequestParam(value = "categoryId", required = false) Long categoryId,
 			@RequestParam(value = "page", defaultValue = "0") int page,
-			@RequestParam(value = "size", defaultValue = "10") int size,
-			Model model) {
+			@RequestParam(value = "size", defaultValue = "10") int size, Model model) {
 		Page<Item> items = itemService.searchItems(keyword, categoryId, page, size);
 		List<Category> categories = categoryService.getAllCategories();
 
@@ -89,8 +80,7 @@ public class ItemController {
 	}
 
 	@GetMapping("/{id}")
-	public String showItemDetail(
-			@PathVariable("id") Long id,
+	public String showItemDetail(@PathVariable("id") Long id,
 			@AuthenticationPrincipal UserDetails userDetails, Model model) {
 		Optional<Item> item = itemService.getItemById(id);
 		if (item.isEmpty()) {
@@ -99,8 +89,8 @@ public class ItemController {
 		model.addAttribute("item", item.get());
 		model.addAttribute("chats", chatService.getChatMessagesByItem(id));
 
-		reviewService.getAverageRatingForSeller(item.get().getSeller())
-				.ifPresent(avg -> model.addAttribute("sellerAverageRating", String.format("%.1f", avg)));
+		reviewService.getAverageRatingForSeller(item.get().getSeller()).ifPresent(
+				avg -> model.addAttribute("sellerAverageRating", String.format("%.1f", avg)));
 
 		if (userDetails != null) {
 			User currentUser = userService.getUserByEmail(userDetails.getUsername())
@@ -112,12 +102,9 @@ public class ItemController {
 	}
 
 	@PostMapping
-	public String addItem(
-			@AuthenticationPrincipal UserDetails userDetails,
-			@RequestParam("name") String name,
-			@RequestParam("description") String description,
-			@RequestParam("price") BigDecimal price,
-			@RequestParam("categoryId") Long categoryId,
+	public String addItem(@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam("name") String name, @RequestParam("description") String description,
+			@RequestParam("price") BigDecimal price, @RequestParam("categoryId") Long categoryId,
 			@RequestParam(value = "image", required = false) MultipartFile imageFile,
 			RedirectAttributes redirectAttributes) {
 		if (userDetails == null) {
@@ -140,83 +127,81 @@ public class ItemController {
 			itemService.saveItem(item, imageFile);
 			redirectAttributes.addFlashAttribute("successMessage", "商品を出品しました！");
 		} catch (Exception e) {
-			redirectAttributes.addFlashAttribute("errorMessage", "画像のアップロードに失敗しました:" + e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage",
+					"画像のアップロードに失敗しました:" + e.getMessage());
 			return "redirect:/items/new";
 		}
 
 		return "redirect:/items";
 	}
-	
+
 	@PostMapping("/{id}/chats")
-	public String sendChatMessage(
-	        @PathVariable("id") Long id,
-	        @RequestParam("message") String message,
-	        @AuthenticationPrincipal UserDetails userDetails,
-	        RedirectAttributes redirectAttributes) {
+	public String sendChatMessage(@PathVariable("id") Long id,
+			@RequestParam("message") String message,
+			@AuthenticationPrincipal UserDetails userDetails,
+			RedirectAttributes redirectAttributes) {
 
-	    Item item = itemService.getItemById(id)
-	            .orElseThrow(() -> new RuntimeException("Item not found"));
+		Item item = itemService.getItemById(id)
+				.orElseThrow(() -> new RuntimeException("Item not found"));
 
-	    if (!"出品中".equals(item.getStatus())) {
-	        redirectAttributes.addFlashAttribute("errorMessage", "この商品は現在チャットを受け付けておりません。");
-	        return "redirect:/items/" + id;
-	    }
+		if (!"出品中".equals(item.getStatus())) {
+			redirectAttributes.addFlashAttribute("errorMessage", "この商品は現在チャットを受け付けておりません。");
+			return "redirect:/items/" + id;
+		}
 
-	    User sender = userService.getUserByEmail(userDetails.getUsername())
-	            .orElseThrow(() -> new RuntimeException("User not found"));
+		User sender = userService.getUserByEmail(userDetails.getUsername())
+				.orElseThrow(() -> new RuntimeException("User not found"));
 
-	    // ここで ChatService を呼び出す際、内部で LINE 通知が実行されます
-	    chatService.sendMessage(id, sender, message);
+		// ここで ChatService を呼び出す際、内部で LINE 通知が実行されます
+		chatService.sendMessage(id, sender, message);
 
-	    // 【削除】ここにあった lineMessagingService.sendMessage(...) のブロックを消去しました
+		// 【削除】ここにあった lineMessagingService.sendMessage(...) のブロックを消去しました
 
-	    return "redirect:/items/" + id + "#chat-section";
+		return "redirect:/items/" + id + "#chat-section";
 	}
 
 	@GetMapping("/{id}/edit")
-	public String showEditItemForm(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes) {
-	    Item item = itemService.getItemById(id)
-	            .orElseThrow(() -> new RuntimeException("Item not found"));
+	public String showEditItemForm(@PathVariable("id") Long id, Model model,
+			RedirectAttributes redirectAttributes) {
+		Item item = itemService.getItemById(id)
+				.orElseThrow(() -> new RuntimeException("Item not found"));
 
-	    // 【追加】売却済みの場合は編集不可
-	    if ("売却済".equals(item.getStatus())) {
-	        redirectAttributes.addFlashAttribute("errorMessage", "売却済みの商品は編集できません。");
-	        return "redirect:/items/selling";
-	    }
+		// 【追加】売却済みの場合は編集不可
+		if ("売却済".equals(item.getStatus())) {
+			redirectAttributes.addFlashAttribute("errorMessage", "売却済みの商品は編集できません。");
+			return "redirect:/my_page/selling";
+		}
 
-	    model.addAttribute("item", item);
-	    model.addAttribute("categories", categoryService.getAllCategories());
-	    return "item_form";
+		model.addAttribute("item", item);
+		model.addAttribute("categories", categoryService.getAllCategories());
+		return "item_form";
 	}
 
 	// --- 更新処理の実行ガード ---
 	@PostMapping("/{id}")
-	public String updateItem(
-	        @PathVariable("id") Long id,
-	        @AuthenticationPrincipal UserDetails userDetails,
-	        @RequestParam("name") String name,
-	        @RequestParam("description") String description,
-	        @RequestParam("price") BigDecimal price,
-	        @RequestParam("categoryId") Long categoryId,
-	        @RequestParam(value = "image", required = false) MultipartFile imageFile,
-	        RedirectAttributes redirectAttributes) throws IOException {
+	public String updateItem(@PathVariable("id") Long id,
+			@AuthenticationPrincipal UserDetails userDetails, @RequestParam("name") String name,
+			@RequestParam("description") String description,
+			@RequestParam("price") BigDecimal price, @RequestParam("categoryId") Long categoryId,
+			@RequestParam(value = "image", required = false) MultipartFile imageFile,
+			RedirectAttributes redirectAttributes) throws IOException {
 
-	    Item existingItem = itemService.getItemById(id)
-	            .orElseThrow(() -> new RuntimeException("Item not found"));
+		Item existingItem = itemService.getItemById(id)
+				.orElseThrow(() -> new RuntimeException("Item not found"));
 
-	    // 【追加】取引ステータスのチェック（編集制限）
-	    if ("取引中".equals(existingItem.getStatus())) {
-	        redirectAttributes.addFlashAttribute("errorMessage", "取引中の商品は編集できません。");
-	        return "redirect:/items/" + id;
-	    }
+		// 【追加】取引ステータスのチェック（編集制限）
+		if ("取引中".equals(existingItem.getStatus())) {
+			redirectAttributes.addFlashAttribute("errorMessage", "取引中の商品は編集できません。");
+			return "redirect:/items/" + id;
+		}
 
-	    User currentUser = userService.getUserByEmail(userDetails.getUsername())
-	            .orElseThrow(() -> new RuntimeException("User not found"));
+		User currentUser = userService.getUserByEmail(userDetails.getUsername())
+				.orElseThrow(() -> new RuntimeException("User not found"));
 
-	    if (!existingItem.getSeller().getId().equals(currentUser.getId())) {
-	        redirectAttributes.addFlashAttribute("errorMessage", "この商品は編集できません。");
-	        return "redirect:/items";
-	    }
+		if (!existingItem.getSeller().getId().equals(currentUser.getId())) {
+			redirectAttributes.addFlashAttribute("errorMessage", "この商品は編集できません。");
+			return "redirect:/items";
+		}
 
 		Category category = categoryService.getCategoryById(categoryId)
 				.orElseThrow(() -> new IllegalArgumentException("Category not found"));
@@ -230,44 +215,43 @@ public class ItemController {
 			itemService.saveItem(existingItem, imageFile);
 			redirectAttributes.addFlashAttribute("successMessage", "商品を更新しました!");
 		} catch (IOException e) {
-			redirectAttributes.addFlashAttribute("errorMessage", "画像のアップロードに失敗しました:" + e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage",
+					"画像のアップロードに失敗しました:" + e.getMessage());
 			return "redirect:/item/{id}/edit";
 		}
 
-		return "redirect:/items/{id}";
+		return "redirect:/my_page/selling";
 	}
 
 	@PostMapping("/{id}/delete")
-	public String deleteItem(
-	        @PathVariable("id") Long id,
-	        @AuthenticationPrincipal UserDetails userDetails,
-	        RedirectAttributes redirectAttributes) {
-	    
-	    Item itemToDelete = itemService.getItemById(id)
-	            .orElseThrow(() -> new RuntimeException("Item not found"));
-	    
-	    // 【追加】取引ステータスのチェック（削除制限）
-	    if ("取引中".equals(itemToDelete.getStatus())) {
-	        redirectAttributes.addFlashAttribute("errorMessage", "取引中の商品は削除できません。");
-	        return "redirect:/items/" + id;
-	    }
+	public String deleteItem(@PathVariable("id") Long id,
+			@AuthenticationPrincipal UserDetails userDetails,
+			RedirectAttributes redirectAttributes) {
 
-	    User currentUser = userService.getUserByEmail(userDetails.getUsername())
-	            .orElseThrow(() -> new RuntimeException("User not found"));
+		Item itemToDelete = itemService.getItemById(id)
+				.orElseThrow(() -> new RuntimeException("Item not found"));
 
-	    if (!itemToDelete.getSeller().getId().equals(currentUser.getId())) {
-	        redirectAttributes.addFlashAttribute("errorMessage", "この商品は削除できません。");
-	        return "redirect:/items";
-	    }
+		// 【追加】取引ステータスのチェック（削除制限）
+		if ("取引中".equals(itemToDelete.getStatus())) {
+			redirectAttributes.addFlashAttribute("errorMessage", "取引中の商品は削除できません。");
+			return "redirect:/items/" + id;
+		}
 
-	    itemService.deleteItem(id);
-	    redirectAttributes.addFlashAttribute("successMessage", "商品を削除しました。");
-	    return "redirect:/items";
+		User currentUser = userService.getUserByEmail(userDetails.getUsername())
+				.orElseThrow(() -> new RuntimeException("User not found"));
+
+		if (!itemToDelete.getSeller().getId().equals(currentUser.getId())) {
+			redirectAttributes.addFlashAttribute("errorMessage", "この商品は削除できません。");
+			return "redirect:/items";
+		}
+
+		itemService.deleteItem(id);
+		redirectAttributes.addFlashAttribute("successMessage", "商品を削除しました。");
+		return "redirect:/items";
 	}
 
 	@PostMapping("/{id}/favorite")
-	public String addFavorite(
-			@PathVariable("id") Long itemId,
+	public String addFavorite(@PathVariable("id") Long itemId,
 			@AuthenticationPrincipal UserDetails userDetails,
 			RedirectAttributes redirectAttributes) {
 		User currentUser = userService.getUserByEmail(userDetails.getUsername())
@@ -283,8 +267,7 @@ public class ItemController {
 	}
 
 	@PostMapping("/{id}/unfavorite")
-	public String removeFavorite(
-			@PathVariable("id") Long itemId,
+	public String removeFavorite(@PathVariable("id") Long itemId,
 			@AuthenticationPrincipal UserDetails userDetails,
 			RedirectAttributes redirectAttributes) {
 		User currentUser = userService.getUserByEmail(userDetails.getUsername())
