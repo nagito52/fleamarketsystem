@@ -53,6 +53,9 @@ function initImagePreview() {
   const fileInput = document.getElementById('image');
   if (!fileInput) return;
 
+  // トリミングモーダルが存在する場合はそちらに任せる
+  if (document.getElementById('crop-modal')) return;
+
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
