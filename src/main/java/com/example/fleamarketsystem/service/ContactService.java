@@ -31,6 +31,10 @@ public class ContactService {
 		return contactRepository.findAllByOrderByCreatedAtDesc();
 	}
 
+	public List<Contact> getUnreadContacts() {
+		return contactRepository.findByReadFalseOrderByCreatedAtDesc();
+	}
+
 	public long getUnreadCount() {
 		return contactRepository.countByReadFalse();
 	}
@@ -41,5 +45,10 @@ public class ContactService {
 				.orElseThrow(() -> new IllegalArgumentException("お問い合わせが見つかりません。"));
 		contact.setRead(true);
 		contactRepository.save(contact);
+	}
+
+	public Contact getContactById(Long id) {
+		return contactRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("お問い合わせが見つかりません。"));
 	}
 }
