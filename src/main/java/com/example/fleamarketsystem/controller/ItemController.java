@@ -23,7 +23,6 @@ import com.example.fleamarketsystem.service.CategoryService;
 import com.example.fleamarketsystem.service.ChatService;
 import com.example.fleamarketsystem.service.FavoriteService;
 import com.example.fleamarketsystem.service.ItemService;
-import com.example.fleamarketsystem.service.LineMessagingService;
 import com.example.fleamarketsystem.service.ReviewService;
 import com.example.fleamarketsystem.service.UserService;
 
@@ -43,18 +42,15 @@ public class ItemController {
 
 	private final ReviewService reviewService;
 
-	private final LineMessagingService lineMessagingService;
-
 	public ItemController(ItemService itemService, CategoryService categoryService,
 			UserService userService, ChatService chatService, FavoriteService favoriteService,
-			ReviewService reviewService, LineMessagingService lineMessagingService) {
+			ReviewService reviewService) {
 		this.itemService = itemService;
 		this.categoryService = categoryService;
 		this.userService = userService;
 		this.chatService = chatService;
 		this.favoriteService = favoriteService;
 		this.reviewService = reviewService;
-		this.lineMessagingService = lineMessagingService;
 	}
 
 	@GetMapping
