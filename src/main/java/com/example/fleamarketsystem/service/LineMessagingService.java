@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -30,7 +28,6 @@ public class LineMessagingService {
     private String adminUserId;
 
     private static final String LINE_API_URL = "https://api.line.me/v2/bot/message/push";
-    private static final String LINE_NOTIFY_URL = "https://notify-api.line.me/api/notify";
 
     public LineMessagingService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -45,19 +42,17 @@ public class LineMessagingService {
             logger.warn("LINEメッセージの送信に失敗しました: token が未設定です。");
             return;
         }
-
         if (adminUserId == null || adminUserId.isBlank()) {
-            sendNotify(messageText);
+            logger.warn("LINEメッセージの送信に失敗しました: user-id が未設定です。");
             return;
         }
 
         try {
             sendPush(messageText);
             logger.info("LINE Messaging API で通知を送信しました。");
-        } catch (HttpClientErrorException.Unauthorized e) {
-            // Messaging APIのトークンが無効な場合は、Notifyトークンの可能性があるためフォールバック
-            logger.warn("LINE Messaging API が 401 でした。LINE Notify で再送を試みます。");
-            sendNotify(messageText);
+        } catch (HttpClientErrorException e) {
+            logger.warn("LINEメッセージの送信に失敗しました: status={} body={}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
         } catch (Exception e) {
             // 失敗してもアプリを止めないよう WARN ログを出力
             logger.warn("LINEメッセージの送信に失敗しました: {}", e.getMessage());
@@ -80,18 +75,5 @@ public class LineMessagingService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
         restTemplate.postForEntity(LINE_API_URL, entity, String.class);
-    }
-
-    private void sendNotify(String messageText) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        headers.setBearerAuth(channelToken);
-
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("message", messageText);
-
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
-        restTemplate.postForEntity(LINE_NOTIFY_URL, entity, String.class);
-        logger.info("LINE Notify で通知を送信しました。");
     }
 }
