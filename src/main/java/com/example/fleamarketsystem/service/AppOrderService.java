@@ -24,15 +24,13 @@ public class AppOrderService {
 
 	private final AppOrderRepository appOrderRepository;
 	private final ItemRepository itemRepository;
-	private final ItemService itemService;
 	private final StripeService stripeService;
 	private final LineMessagingService lineMessagingService;
 
 	public AppOrderService(AppOrderRepository appOrderRepository, ItemRepository itemRepository,
-			ItemService itemService, StripeService stripeService, LineMessagingService lineMessagingService) {
+			StripeService stripeService, LineMessagingService lineMessagingService) {
 		this.appOrderRepository = appOrderRepository;
 		this.itemRepository = itemRepository;
-		this.itemService = itemService;
 		this.stripeService = stripeService;
 		this.lineMessagingService = lineMessagingService;
 	}
