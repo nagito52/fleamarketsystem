@@ -31,6 +31,13 @@
 			<p>ようこそ、<span sec:authentication="name"></span>さん！（管理者）</p>
 		</div>
 
+		<div th:if="${successMessage}" class="alert-success">
+			<i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+		</div>
+		<div th:if="${errorMessage}" class="alert-danger">
+			<i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+		</div>
+
 		<!-- Cancel Notification -->
 		<div th:if="${!#lists.isEmpty(pendingCancels)}" class="admin-notification animate-in">
 			<h2><i class="fas fa-exclamation-triangle"></i> キャンセル確定（返金）が必要な通知</h2>
@@ -102,6 +109,7 @@
 						<th>価格</th>
 						<th>取引ステータス</th>
 						<th>商品状態</th>
+						<th>操作</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -119,9 +127,20 @@
 								th:classappend="${order.item.status == '出品中' ? 'badge-selling' : (order.item.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
 								th:text="${order.item.status}"></span>
 						</td>
+						<td>
+							<form th:action="@{/admin/orders/{id}/force-cancel(id=${order.id})}" method="post"
+								style="display: inline-flex; gap: 6px; align-items: center;">
+								<input type="text" name="reason" placeholder="理由(任意)"
+									class="form-control" style="max-width: 180px; padding: 6px 10px; font-size: 0.8rem;">
+								<button type="submit" class="btn btn-sm btn-danger"
+									onclick="return confirm('強制キャンセルを実行します。よろしいですか？');">
+									<i class="fas fa-ban"></i> 強制キャンセル
+								</button>
+							</form>
+						</td>
 					</tr>
 					<tr th:if="${#lists.isEmpty(activeOrders)}">
-						<td colspan="5" style="text-align: center; padding: 30px; color: var(--text-secondary);">現在進行中の取引はありません。</td>
+						<td colspan="6" style="text-align: center; padding: 30px; color: var(--text-secondary);">現在進行中の取引はありません。</td>
 					</tr>
 				</tbody>
 			</table>

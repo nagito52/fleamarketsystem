@@ -230,6 +230,34 @@ public class AppOrderService {
 		}
 	}
 
+	@Transactional
+	public void forceCancelByAdmin(Long orderId, String reason) throws StripeException {
+		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
+		if (AppOrder.STATUS_CANCELLED.equals(order.getStatus())
+				|| AppOrder.STATUS_COMPLETED.equals(order.getStatus())) {
+			throw new IllegalStateException("この取引は強制キャンセルできません。");
+		}
+		if (order.getPaymentIntentId() != null && !order.getPaymentIntentId().isBlank()) {
+			stripeService.refund(order.getPaymentIntentId());
+		}
+
+		order.setStatus(AppOrder.STATUS_CANCELLED);
+		Item item = order.getItem();
+		item.setStatus("出品中");
+
+		itemRepository.saveAndFlush(item);
+		appOrderRepository.saveAndFlush(order);
+
+		try {
+			String reasonText = (reason == null || reason.isBlank()) ? "理由: (未入力)" : "理由: " + reason;
+			String message = String.format("【強制キャンセル】運営側で取引をキャンセルしました。\n商品名: %s\n価格: ¥%s\n%s",
+					item.getName(), order.getPrice(), reasonText);
+			lineMessagingService.sendMessage(message);
+		} catch (Exception e) {
+			System.err.println("LINE通知失敗: " + e.getMessage());
+		}
+	}
+
 	// --- 4. 統計画面用 ---
 
 	public Map<String, Long> getOrderCountByStatus(LocalDate startDate, LocalDate endDate) {

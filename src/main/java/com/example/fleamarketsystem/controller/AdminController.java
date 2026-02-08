@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.fleamarketsystem.entity.Item;
 import com.example.fleamarketsystem.service.AdminUserService;
@@ -97,6 +98,19 @@ public class AdminController {
 	public String finalizeCancelByAdmin(@PathVariable("id") Long orderId) throws com.stripe.exception.StripeException {
 		appOrderService.finalCancel(orderId);
 		return "redirect:/admin/dashboard?success=refunded";
+	}
+
+	@PostMapping("/orders/{id}/force-cancel")
+	public String forceCancelByAdmin(@PathVariable("id") Long orderId,
+			@RequestParam(value = "reason", required = false) String reason,
+			RedirectAttributes redirectAttributes) {
+		try {
+			appOrderService.forceCancelByAdmin(orderId, reason);
+			redirectAttributes.addFlashAttribute("successMessage", "強制キャンセルを実行しました。");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+		}
+		return "redirect:/admin/dashboard";
 	}
 
 	@GetMapping("/statistics/csv")
