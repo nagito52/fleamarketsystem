@@ -1,14 +1,13 @@
 package com.example.fleamarketsystem.controller;
 
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.example.fleamarketsystem.entity.User;
 import com.example.fleamarketsystem.service.UserService;
@@ -29,7 +28,7 @@ public class LoginController {
     }
 
     @PostMapping("/signup")
-    public String register(@ModelAttribute User user, RedirectAttributes redirectAttributes, Model model) {
+    public String register(@ModelAttribute User user, RedirectAttributes redirectAttributes, Model model, HttpServletRequest request) {
         
         // --- 1. バリデーション ---
         if (user.getPassword() == null || user.getPassword().length() < 8) {
@@ -47,14 +46,13 @@ public class LoginController {
         user.setBanned(false);
         userService.saveUser(user);
 
-        // --- 3. 自動ログイン処理（Spring Security のコンテキストに登録） ---
-        // DBに保存した直後の情報を使って「ログイン済み」という状態をメモリに作ります
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-            user.getEmail(), 
-            user.getPassword(), 
-            AuthorityUtils.createAuthorityList(user.getRole())
-        );
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        // --- 3. 自動ログイン処理（セッションに保存される認証） ---
+        try {
+            request.login(user.getEmail(), user.getPassword());
+        } catch (ServletException e) {
+            model.addAttribute("errorMessage", "自動ログインに失敗しました。再度ログインしてください。");
+            return "login";
+        }
 
         redirectAttributes.addFlashAttribute("successMessage", "ご登録ありがとうございます！");
         
