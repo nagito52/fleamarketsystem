@@ -39,7 +39,6 @@ public class ContactController {
 	public String submitContact(@AuthenticationPrincipal UserDetails userDetails,
 			@RequestParam("subject") String subject,
 			@RequestParam("message") String message,
-			@RequestParam(value = "orderId", required = false) String orderId,
 			RedirectAttributes redirectAttributes) {
 		if (userDetails == null) {
 			return "redirect:/login";
@@ -51,9 +50,8 @@ public class ContactController {
 		User user = userService.getUserByEmail(userDetails.getUsername())
 				.orElseThrow(() -> new RuntimeException("User not found"));
 
-		String orderText = (orderId == null || orderId.isBlank()) ? "注文ID: (未入力)" : "注文ID: " + orderId;
-		String text = String.format("【お問い合わせ】\nユーザー: %s (%s)\n%s\n件名: %s\n内容:\n%s",
-				user.getName(), user.getEmail(), orderText, subject, message);
+		String text = String.format("【お問い合わせ】\nユーザー: %s (%s)\n件名: %s\n内容:\n%s",
+				user.getName(), user.getEmail(), subject, message);
 		lineMessagingService.sendMessage(text);
 
 		redirectAttributes.addFlashAttribute("successMessage", "お問い合わせを送信しました。");

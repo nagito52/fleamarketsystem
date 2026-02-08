@@ -233,9 +233,8 @@ public class AppOrderService {
 	@Transactional
 	public void forceCancelByAdmin(Long orderId, String reason) throws StripeException {
 		AppOrder order = appOrderRepository.findById(orderId).orElseThrow();
-		if (AppOrder.STATUS_CANCELLED.equals(order.getStatus())
-				|| AppOrder.STATUS_COMPLETED.equals(order.getStatus())) {
-			throw new IllegalStateException("この取引は強制キャンセルできません。");
+		if (!AppOrder.STATUS_TRADING.equals(order.getStatus())) {
+			throw new IllegalStateException("取引中の商品のみ強制キャンセルできます。");
 		}
 		if (order.getPaymentIntentId() != null && !order.getPaymentIntentId().isBlank()) {
 			stripeService.refund(order.getPaymentIntentId());
