@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title th:text="${item.name} + ' - 商品詳細'"></title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap"
+		rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
 	<!-- Navbar -->
 	<nav class="navbar">
@@ -38,15 +41,15 @@
 		<!-- Item Detail -->
 		<div class="item-detail animate-in">
 			<div class="item-image-wrap">
-				<img th:src="${item.imageUrl != null ? item.imageUrl : '/images/placeholder.png'}" alt="商品画像" class="item-image">
+				<img th:src="${item.imageUrl != null ? item.imageUrl : '/images/placeholder.png'}" alt="商品画像"
+					class="item-image">
 			</div>
 			<div class="item-info">
 				<h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 8px;" th:text="${item.name}"></h1>
 
 				<span class="badge"
 					th:classappend="${item.status == '出品中' ? 'badge-selling' : (item.status == '取引中' ? 'badge-trading' : 'badge-sold')}"
-					th:text="${item.status}"
-					style="align-self: flex-start;"></span>
+					th:text="${item.status}" style="align-self: flex-start;"></span>
 
 				<div class="item-price">
 					<span th:text="'¥' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></span>
@@ -74,8 +77,7 @@
 				<!-- Action Buttons -->
 				<div class="btn-group" style="margin-top: 16px;">
 					<!-- Purchase Button -->
-					<form th:action="@{/orders/initiate-purchase}" method="post"
-						sec:authorize="isAuthenticated()"
+					<form th:action="@{/orders/initiate-purchase}" method="post" sec:authorize="isAuthenticated()"
 						th:if="${item.status == '出品中' and item.seller.email != #authentication.name}"
 						onsubmit="return confirm('本当にこの商品を購入しますか？');">
 						<input type="hidden" name="itemId" th:value="${item.id}">
@@ -91,12 +93,14 @@
 
 					<!-- Favorite Toggle -->
 					<div sec:authorize="isAuthenticated()" th:if="${item.seller.email != #authentication.name}">
-						<form th:if="${isFavorited}" th:action="@{/items/{id}/unfavorite(id=${item.id})}" method="post" style="display:inline;">
+						<form th:if="${isFavorited}" th:action="@{/items/{id}/unfavorite(id=${item.id})}" method="post"
+							style="display:inline;">
 							<button type="submit" class="heart-btn active">
 								<i class="fas fa-heart"></i> お気に入り解除
 							</button>
 						</form>
-						<form th:unless="${isFavorited}" th:action="@{/items/{id}/favorite(id=${item.id})}" method="post" style="display:inline;">
+						<form th:unless="${isFavorited}" th:action="@{/items/{id}/favorite(id=${item.id})}"
+							method="post" style="display:inline;">
 							<button type="submit" class="heart-btn inactive">
 								<i class="far fa-heart"></i> お気に入りに追加
 							</button>
@@ -114,7 +118,8 @@
 				<div th:each="chat : ${chats}" class="chat-message"
 					th:classappend="${chat.sender.email == #authentication.name ? 'my-message' : 'other-message'}">
 					<span class="sender-name" th:text="${chat.sender.name}"></span>
-					<span class="message-time" th:text="${#temporals.format(chat.createdAt, 'yyyy/MM/dd HH:mm')}"></span>
+					<span class="message-time"
+						th:text="${#temporals.format(chat.createdAt, 'yyyy/MM/dd HH:mm')}"></span>
 					<p th:text="${chat.message}"></p>
 				</div>
 				<div th:if="${#lists.isEmpty(chats)}" class="empty-state" style="padding: 30px;">
@@ -124,7 +129,8 @@
 			</div>
 
 			<!-- Chat Form (only when 出品中) -->
-			<form th:if="${item.status == '出品中'}" th:action="@{/items/{id}/chats(id=${item.id})}" method="post" class="chat-form">
+			<form th:if="${item.status == '出品中'}" th:action="@{/items/{id}/chats(id=${item.id})}" method="post"
+				class="chat-form">
 				<textarea name="message" placeholder="メッセージを入力してください..." required></textarea>
 				<button type="submit" class="btn btn-primary">
 					<i class="fas fa-paper-plane"></i> 送信
@@ -141,4 +147,5 @@
 
 	<script th:src="@{/js/app.js}"></script>
 </body>
+
 </html>
