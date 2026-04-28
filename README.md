@@ -58,10 +58,10 @@ src/main/resources
 
 ## 要件定義について
 
-要件定義は作成済みです。  
+要件定義は作成済みです。 
+https://docs.google.com/spreadsheets/d/1mkP6r85kbLDftwuZpuU-_S9_lO5J1ABAS97BzmC78Co/edit?usp=sharing
 README では実装観点の要約を記載し、詳細な仕様・画面遷移・ユースケースは要件定義書で管理しています。
 
-> 補足: 要件定義書をリポジトリに含める場合は `docs/requirements.md` などに配置し、ここからリンクしてください。
 
 ## セットアップ手順
 
